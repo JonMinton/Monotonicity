@@ -13,8 +13,12 @@ require(xlsx)
 source("Scripts/Read_Data.R")
 
 # Load functions
+source("Scripts/Functions.R")
+
 
 # Stage global variables (e.g. N.psa)
+
+n.PSA <- 1000
 
 # Generate Figures
 
