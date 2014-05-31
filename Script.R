@@ -8,6 +8,8 @@ rm (list=ls())
 # Load prerequisites
 require(MASS)
 require(xlsx)
+require(ggplot2)
+
 
 # Load data
 source("Scripts/Read_Data.R")
