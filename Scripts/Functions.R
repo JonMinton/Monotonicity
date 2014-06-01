@@ -32,9 +32,9 @@ Bootstrap_Means_IPD <- function(
     n.vars <- dim(Data)[2]
     n.obs <- dim(Data)[1]
     draws <- 1:n.reps
-    output <- matrix(NA, nrows=n.reps, ncols)
+    output <- matrix(NA, nrow=n.reps, ncol=n.vars)
     for (i in 1:n.reps){
-        this.boot <- Data[sample(draws, n.obs, T),]
+        this.boot <- Data[sample(1:n.obs, n.obs, T),]
         for (j in 1:n.vars){
             output[i,j] <- mean(this.boot[,j])
         }
@@ -76,7 +76,8 @@ Get_Dif_Param <- function(
 Make_AIVM_Cov_2D <- function(
     mu.X, sd.X, 
     mu.Y, sd.Y, 
-    n.psa=n.PSA){
+    n.psa=n.PSA
+    ){
     
     varX <- sd.X^2
     varY <- sd.Y^2
@@ -99,8 +100,13 @@ Make_AIVM_Cov_2D <- function(
         )
 }
 
-Make_BCVR_2d <- function(mu.X, sd.X, mu.Y, sd.Y, n.psa=n.PSA, incBy=0.00001, upper=T){    
-
+Make_BCVR_2d <- function(
+    mu.X, sd.X, 
+    mu.Y, sd.Y, 
+    n.psa=n.PSA, 
+    incBy=0.00001, 
+    upper=T
+    ){    
     varX <- sd.X^2 # variance of X
     varY <- sd.Y^2 # variance of Y
     if(upper==T){
@@ -182,9 +188,9 @@ Create_Draws <- function(
     if (method==1){
         ## Method 1 : Independent Sampling (Naive)
         for (i in 1:n.vars){
-            this.params <- estBeta(
+            this.params <- Est_Beta(
                 Sum_Data[[i]]$mu,
-                Sum_Data[[i]]$sd^2
+                Sum_Data[[i]]$se^2
                 )
             this.draws <- rbeta(
                 n.psa,
@@ -199,9 +205,9 @@ Create_Draws <- function(
         ## Method 2 : Quantile matching/same random number seed        
         ## Method 1 : Independent Sampling (Naive)
         for (i in 1:n.vars){
-            this.params <- estBeta(
+            this.params <- Est_Beta(
                 Sum_Data[[i]]$mu,
-                Sum_Data[[i]]$sd^2
+                Sum_Data[[i]]$se^2
             )
             set.seed(seed)
             this.draws <- rbeta(
@@ -217,9 +223,9 @@ Create_Draws <- function(
     if (method==3){
         ## Method 3 : Upward Replacement
         for (i in 1:n.vars){
-            this.params <- estBeta(
+            this.params <- Est_Beta(
                 Sum_Data[[i]]$mu,
-                Sum_Data[[i]]$sd^2
+                Sum_Data[[i]]$se^2
             )
             this.draws <- rbeta(
                 n.psa,
@@ -228,7 +234,8 @@ Create_Draws <- function(
             )
             
             if (i > 1){
-                this.draws[this.draws > output[,i-1]] <- output[,i-1]
+                violations <- this.draws > output[,i-1]
+                this.draws[violations] <- output[violations,i-1]
             }
             output[,i] <- this.draws
         }
@@ -238,9 +245,9 @@ Create_Draws <- function(
     if (method==4){
         ## Method 4 : Downward Replacement
         for (i in n.vars:1){
-            this.params <- estBeta(
+            this.params <- Est_Beta(
                 Sum_Data[[i]]$mu,
-                Sum_Data[[i]]$sd^2
+                Sum_Data[[i]]$se^2
                 )
             this.draws <- rbeta(
                 n.psa,
@@ -248,7 +255,8 @@ Create_Draws <- function(
                 this.params$b
                 )
             if (i < n.vars){
-                this.draws[this.draws < output[,i+1]] <- output[,i+1]
+                violations <- this.draws < output[,i+1]
+                this.draws[violations] <- output[violations, i + 1]
             }
             output[,i] <- this.draws
         }
@@ -259,9 +267,9 @@ Create_Draws <- function(
 
         # METHOD 5: UPWARDS RESAMPLING
         for (i in 1:n.vars){
-            this.params <- estBeta(
+            this.params <- Est_Beta(
                 Sum_Data[[i]]$mu, 
-                sum_Data[[i]]$sd^2
+                sum_Data[[i]]$se^2
                 )
             if (i ==1){
                 output[,1] <- rbeta(
@@ -292,9 +300,9 @@ Create_Draws <- function(
         ## Method 6 : Upward Resampling
         
         for (i in n.vars:1){
-            this.params <- estBeta(
+            this.params <- Est_Beta(
                 Sum_Data[[i]]$mu, 
-                sum_Data[[i]]$sd^2
+                sum_Data[[i]]$se^2
             )
             if (i == n.vars){
                 output[,n.vars] <- rbeta(
@@ -328,20 +336,23 @@ Create_Draws <- function(
         
         output <- Make_AIVM_Cov_2D(
             mu.X=Sum_Data[[1]]$mu,
-            sd.X=Sum_Data[[1]]$sd,
+            sd.X=Sum_Data[[1]]$se,
             mu.Y=Sum_Data[[2]]$mu,
-            mu.Y=sum_Data[[2]]$sd
+            mu.Y=sum_Data[[2]]$se
             )$aivm.samples
         
     }
     
     if (method==8){
         ## Method 8 : Lower bounded covariance retrofitting
+        
+        if (n.vars!=2) stop("Only two parameters allowed with this method")
+        
         output <- MakeBCVR.2d(
-            mu.X=U1.summary$mu,
-            sd.X=U1.summary$sd,
-            mu.Y=U2.summary$mu,
-            sd.Y=U2.summary$sd,
+            mu.X=Sum_Data[[1]]$mu,
+            sd.X=Sum_Data[[1]]$se,
+            mu.Y=Sum_Data[[2]]$mu,
+            sd.Y=Sum_Data[[2]]$se,
             upper=F
         )$samples
                 
@@ -349,11 +360,12 @@ Create_Draws <- function(
     
     if (method==9){
         ## Method 9 : Upper Bounded covariance retrofitting
+        if (n.vars!=2) stop("Only two parameters allowed with this method")
         output <- MakeBCVR.2d(
-            mu.X=U1.summary$mu,
-            sd.X=U1.summary$sd,
-            mu.Y=U2.summary$mu,
-            sd.Y=U2.summary$sd,
+            mu.X=Sum_Data[[1]]$mu,
+            sd.X=Sum_Data[[1]]$se,
+            mu.Y=Sum_Data[[2]]$mu,
+            sd.Y=Sum_Data[[2]]$se,
             upper=T
         )$samples
         
@@ -362,26 +374,70 @@ Create_Draws <- function(
     
     if (method==10){
         ## Method 10: Beta distribution difference modelling
-        DifParams <- Get_Dif_Param(
-            U1.summary$mu, U1.summary$sd, 
-            U2.summary$mu, U2.summary$sd
-            )
-        
-        
-        rU2.raw <- rbeta(n.PSA, u2.param$a, u2.param$b)
-        #rU1 <- rnorm(n.PSA, U1.summary$mu, U1.summary$sd)
-        rU1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
-        
-        rdelta<-rbeta(n.PSA,DifParams$a,DifParams$b)
-        rU2<-rU1-rdelta
-        
-        
+        if (!exists("direction")) {
+            stop("The variable direction must be specified for this method")
+        } else {
+            if (direction=="up"){
+                # lowest value is reference
+                draws.ref <- rbeta(
+                    n.psa, 
+                    Sum_Data[[1]]$mu,
+                    Sum_Data[[1]]$se
+                    )
+                output[,1] <- draws.ref
+                
+                for (i in 1:n.vars){
+                    
+                    this.dif_params <- Get_Dif_Param(
+                        Sum_Data[[i-1]]$mu, 
+                        Sum_Data[[i-1]]$se,
+                        
+                        Sum_Data[[i]]$mu,
+                        Sum_Data[[i]]$se
+                        )
+                    
+                    this.deltas <- rbeta(
+                        n.psa,
+                        this.dif_params$a,
+                        this.dif_params$b
+                        )
+                    
+                    output[,i] <- output[,i-1] + this.deltas
+                }
+                
+            } else if (direction=="down"){
+                draws.ref <- rbeta(
+                    n.psa, 
+                    Sum_Data[[n.vars]]$mu,
+                    Sum_Data[[n.vars]]$se
+                )
+                output[,n.vars] <- draws.ref
+                
+                for (i in n.vars:1){
+                    
+                    this.dif_params <- Get_Dif_Param(
+                        Sum_Data[[i-1]]$mu, 
+                        Sum_Data[[i-1]]$se,
+                        
+                        Sum_Data[[i]]$mu,
+                        Sum_Data[[i]]$se
+                    )
+                    
+                    this.deltas <- rbeta(
+                        n.psa,
+                        this.dif_params$a,
+                        this.dif_params$b
+                    )
+                    
+                    output[,i] <- output[,i+1] - this.deltas
+                }
+                
+                
+            } else stop("value of direction not valid: must be either down or up")
+            
+        }
+    
     }
-    
-    
-    # Methods stuff goes here
-    
-    
     
     ###
     return(output)
@@ -391,171 +447,145 @@ Create_Draws <- function(
 
 
 
-
-
-
-############################################################################################################################
-######################## METHODS ###########################################################################################
-############################################################################################################################
-
-
-# 2d case first, then 3d case
-
-# changed my mind: now just going to look at 2d case
-
-
-
-
-plot(u2 ~ u1, data=PSA.method01, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
-abline(0,1)
-
-# METHOD 2: SAME RANDOM NUMBER SEED
-
-# Illustration of issue with random number stream and beta distribution
-
-# non-problematic run:
-
-
-
-# PSA.method02 <-  data.frame(u1=u1, u2=u2)
-# rm(u1, u2)
 # 
-# plot(u2 ~ u1, data=PSA.method02, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
+# 
+# ############################################################################################################################
+# ######################## METHODS ###########################################################################################
+# ############################################################################################################################
+# 
+# 
+# # 2d case first, then 3d case
+# 
+# # changed my mind: now just going to look at 2d case
+# 
+# 
+# 
+# 
+# plot(u2 ~ u1, data=PSA.method01, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
 # abline(0,1)
 # 
+# # METHOD 2: SAME RANDOM NUMBER SEED
 # 
-# # METHOD 3: UPWARD REPLACEMENT
+# # Illustration of issue with random number stream and beta distribution
 # 
-# u1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
-# u2 <- rbeta(n.PSA, u2.param$a, u2.param$b)
+# # non-problematic run:
 # 
-# u1[u1 < u2] <- u2[u1 < u2]
-# PSA.method03 <- data.frame(u1=u1, u2=u2)
-# rm(u1, u2)
-# plot(u2 ~ u1, data=PSA.method03, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
-# abline(0,1)
 # 
-# # METHOD 4: DOWNWARD REPLACEMENT
 # 
-# u1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
-# u2 <- rbeta(n.PSA, u2.param$a, u2.param$b)
-# u2[u2 > u1] <- u1[u2 > u1]
+# # PSA.method02 <-  data.frame(u1=u1, u2=u2)
+# # rm(u1, u2)
+# # 
+# # plot(u2 ~ u1, data=PSA.method02, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
+# # abline(0,1)
+# # 
+# # 
+# # # METHOD 3: UPWARD REPLACEMENT
+# # 
+# # u1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
+# # u2 <- rbeta(n.PSA, u2.param$a, u2.param$b)
+# # 
+# # u1[u1 < u2] <- u2[u1 < u2]
+# # PSA.method03 <- data.frame(u1=u1, u2=u2)
+# # rm(u1, u2)
+# # plot(u2 ~ u1, data=PSA.method03, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
+# # abline(0,1)
+# # 
+# # # METHOD 4: DOWNWARD REPLACEMENT
+# # 
+# # u1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
+# # u2 <- rbeta(n.PSA, u2.param$a, u2.param$b)
+# # u2[u2 > u1] <- u1[u2 > u1]
+# # 
+# # PSA.method04 <- data.frame(u1=u1, u2=u2)
+# # rm(u1, u2)
+# # 
+# # plot(u2 ~ u1, data=PSA.method04, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
+# # abline(0,1)
 # 
-# PSA.method04 <- data.frame(u1=u1, u2=u2)
-# rm(u1, u2)
+# # 
+# # # METHOD 5: UPWARDS RESAMPLING
+# # 
+# # u1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
+# # u2 <- rep(NA, n.PSA)
+# # 
+# # for (i in 1:n.PSA){
+# #     continue <- F
+# #     while(continue==F){
+# #         this.u2 <- rbeta(1, u2.param$a, u2.param$b)
+# #         if (this.u2 < u1[i]){
+# #             u2[i] <- this.u2
+# #             continue <- T
+# #         }
+# #     }
+# # }
+# # 
+# # PSA.method05 <- data.frame(u1=u1, u2=u2)
+# # 
+# # rm(u1, u2)
+# # plot(u2 ~ u1, data=PSA.method05, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
+# # abline(0,1)
+# # 
+# # # METHOD 6: DOWNWARDS RESAMPLING [?]
+# # 
+# # u1 <- rep(NA, n.PSA)
+# # u2 <- rbeta(n.PSA, u2.param$a, u2.param$b)
+# # 
+# # for (i in 1:n.PSA){
+# #     continue <- F
+# #     while(continue==F){
+# #         this.u1 <- rbeta(1, u1.param$a, u1.param$b)
+# #         if (this.u1 > u2[i]){
+# #             u1[i] <- this.u1
+# #             continue <- T
+# #         }
+# #     }
+# # }
+# # 
+# # PSA.method06 <- data.frame(u1=u1, u2=u2)
+# # 
+# # rm(u1, u2)
 # 
-# plot(u2 ~ u1, data=PSA.method04, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
-# abline(0,1)
-
+# # METHOD 7: AIVM COVARIANCE
 # 
-# # METHOD 5: UPWARDS RESAMPLING
+# # Correlation(X, Y) := covariance (X, Y) / (sd(X) * sd(Y))
+# # So, when correlation = 1
+# # covariance(X, y) = sd(X) * sd(Y)
+# # This defines the upper limit on the values
 # 
-# u1 <- rbeta(n.PSA, u1.param$a, u1.param$b)
-# u2 <- rep(NA, n.PSA)
+# # Function
 # 
-# for (i in 1:n.PSA){
-#     continue <- F
-#     while(continue==F){
-#         this.u2 <- rbeta(1, u2.param$a, u2.param$b)
-#         if (this.u2 < u1[i]){
-#             u2[i] <- this.u2
-#             continue <- T
-#         }
-#     }
-# }
 # 
-# PSA.method05 <- data.frame(u1=u1, u2=u2)
 # 
-# rm(u1, u2)
-# plot(u2 ~ u1, data=PSA.method05, xlim=c(0.45, 0.7), ylim=c(0.45,0.7))
-# abline(0,1)
+# #plot(u2 ~ u1, data=PSA.method07)
 # 
-# # METHOD 6: DOWNWARDS RESAMPLING [?]
+# # METHOD 8: Lower Bounded Covariance Retrofitting
+# # METHOD 9: Upper Bounded Covariance Retrofitting
 # 
-# u1 <- rep(NA, n.PSA)
-# u2 <- rbeta(n.PSA, u2.param$a, u2.param$b)
-# 
-# for (i in 1:n.PSA){
-#     continue <- F
-#     while(continue==F){
-#         this.u1 <- rbeta(1, u1.param$a, u1.param$b)
-#         if (this.u1 > u2[i]){
-#             u1[i] <- this.u1
-#             continue <- T
-#         }
-#     }
-# }
-# 
-# PSA.method06 <- data.frame(u1=u1, u2=u2)
-# 
-# rm(u1, u2)
-
-# METHOD 7: AIVM COVARIANCE
-
-# Correlation(X, Y) := covariance (X, Y) / (sd(X) * sd(Y))
-# So, when correlation = 1
-# covariance(X, y) = sd(X) * sd(Y)
-# This defines the upper limit on the values
-
-# Function
-
-
-
-#plot(u2 ~ u1, data=PSA.method07)
-
-# METHOD 8: Lower Bounded Covariance Retrofitting
-# METHOD 9: Upper Bounded Covariance Retrofitting
-
-# Lowerbounded (method 8) : use upper=F
-# Otherwise (method 9) use default:  upper=T
-
-
-
-names(PSA.method08) <- c("u1", "u2")
-
-tmp <- MakeBCVR.2d(
-    mu.X=U1.summary$mu,
-    sd.X=U1.summary$sd,
-    mu.Y=U2.summary$mu,
-    sd.Y=U2.summary$sd
-)
-
-method09.cov <- tmp$cov
-method09.cor <- tmp$cor
-
-
-PSA.method09 <- data.frame(tmp$samples)
-names(PSA.method09) <- c("u1", "u2")
-
-
-plot(u2 ~ u1, data=PSA.method08)
-plot(u2 ~ u1, data=PSA.method09)
-
-# METHOD 10: Beta distribution difference fitting
-
-
-
-
-tiff("Fig3 Dif_comparison.tiff", 500, 500)
-plot(
-    density(rU1), 
-    xlim=c(0.4, 0.7), 
-    ylim=c(0,20), 
-    main="", 
-    xlab=expression(italic(U)), 
-    ylab="Density of simulated values")
-lines(density(rU2), lty="dashed")
-lines(density(rU2.raw), lwd=2, lty="dashed")
-legend("topleft", 
-       legend=c(
-           expression(italic(U)[1]), 
-           expression(paste(italic(U)[2], " using difference method")), 
-           expression(paste(italic(U)[2], " using independent sampling"))
-       ), 
-       lwd=c(1,1,2), 
-       lty=c("solid", "dashed", "dashed"))
-dev.off()
-
-
-PSA.method10 <- data.frame(u1 = rU1, u2=rU2)
+# # Lowerbounded (method 8) : use upper=F
+# # Otherwise (method 9) use default:  upper=T
+# # 
+# # 
+# # 
+# # names(PSA.method08) <- c("u1", "u2")
+# # 
+# # tmp <- MakeBCVR.2d(
+# #     mu.X=U1.summary$mu,
+# #     sd.X=U1.summary$sd,
+# #     mu.Y=U2.summary$mu,
+# #     sd.Y=U2.summary$sd
+# # )
+# # 
+# # method09.cov <- tmp$cov
+# # method09.cor <- tmp$cor
+# # 
+# # 
+# # PSA.method09 <- data.frame(tmp$samples)
+# # names(PSA.method09) <- c("u1", "u2")
+# # 
+# # 
+# # plot(u2 ~ u1, data=PSA.method08)
+# # plot(u2 ~ u1, data=PSA.method09)
+# # 
+# # # METHOD 10: Beta distribution difference fitting
+# # 
 

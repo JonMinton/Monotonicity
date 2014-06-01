@@ -531,3 +531,29 @@ for (i in 1:11){
 }
 
 colnames(quants.of.interest) <- c("boot", 1:10)
+
+
+
+
+tiff("Fig3 Dif_comparison.tiff", 500, 500)
+plot(
+    density(rU1), 
+    xlim=c(0.4, 0.7), 
+    ylim=c(0,20), 
+    main="", 
+    xlab=expression(italic(U)), 
+    ylab="Density of simulated values")
+lines(density(rU2), lty="dashed")
+lines(density(rU2.raw), lwd=2, lty="dashed")
+legend("topleft", 
+       legend=c(
+           expression(italic(U)[1]), 
+           expression(paste(italic(U)[2], " using difference method")), 
+           expression(paste(italic(U)[2], " using independent sampling"))
+       ), 
+       lwd=c(1,1,2), 
+       lty=c("solid", "dashed", "dashed"))
+dev.off()
+
+
+PSA.method10 <- data.frame(u1 = rU1, u2=rU2)
