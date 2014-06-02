@@ -76,7 +76,8 @@ Get_Dif_Param <- function(
 Make_AIVM_Cov_2D <- function(
     mu.X, sd.X, 
     mu.Y, sd.Y, 
-    n.psa=n.PSA
+    colnames_,
+    n.psa_=n.psa
     ){
     
     varX <- sd.X^2
@@ -90,8 +91,8 @@ Make_AIVM_Cov_2D <- function(
     
     sig <- matrix(data=c(varX, aivm, aivm, varY), nrow=2, byrow=T)
     
-    aivm.samples <-   mvrnorm(n=n.psa, mu=c(mu.X, mu.Y), Sigma=sig )
-    colnames(aivm.samples) <- c("X.sampled", "Y.sampled")
+    aivm.samples <-   mvrnorm(n=n.psa_, mu=c(mu.X, mu.Y), Sigma=sig )
+    colnames(aivm.samples) <- colnames_
     aivm.samples <- as.data.frame(aivm.samples)
     return(
         list(
@@ -100,11 +101,12 @@ Make_AIVM_Cov_2D <- function(
         )
 }
 
-Make_BCVR_2d <- function(
+Make_BCVR_2D <- function(
     mu.X, sd.X, 
     mu.Y, sd.Y, 
-    n.psa=n.PSA, 
+    n.psa_=n.psa, 
     incBy=0.00001, 
+    colnames_,
     upper=T
     ){    
     varX <- sd.X^2 # variance of X
@@ -130,19 +132,19 @@ Make_BCVR_2d <- function(
         cat("Upperbound already reached\n")
         search <- F # if the upper limit's already been reached, go no further
         testsig <- matrix(c(varX, this.cov, this.cov, varY), nrow=2, byrow=T)
-        testsamples <- mvrnorm(n.psa, mu=mus, Sigma=testsig)
+        testsamples <- mvrnorm(n.psa_, mu=mus, Sigma=testsig)
     } else {
         cat("Upperbound not yet reached\n")
         this.cov <- lowerbound
         cat("This covariance: ", this.cov, "\n", sep="")
         testsig <- matrix(c(varX, this.cov, this.cov, varY), nrow=2, byrow=T)
-        testsamples <- mvrnorm(n.psa, mu=mus, Sigma=testsig)
+        testsamples <- mvrnorm(n.psa_, mu=mus, Sigma=testsig)
     }
     
     while(search==T){
         cat("trying ", this.cov, "\n")
         testsig <- matrix(c(varX, this.cov, this.cov, varY), nrow=2, byrow=T)
-        try.testsamples <- try(mvrnorm(n.psa, mu=mus, Sigma=testsig))
+        try.testsamples <- try(mvrnorm(n.psa_, mu=mus, Sigma=testsig))
         if(class(try.testsamples)=="try-error"){ # if mvrnorm has been passed impossible values
             search <- F
             cat("Error picked up\n")
@@ -161,6 +163,7 @@ Make_BCVR_2d <- function(
         }
     }
     this.cor <- this.cov / (sd.X * sd.Y)
+    colnames(testsamples)=colnames_
     return(
         list(cov=this.cov, 
              samples=testsamples, 
@@ -177,6 +180,7 @@ Create_Draws <- function(
     n.psa=1000,
     ###
     seed=80,
+    direction="up",
     ...
     ){
     # Sum_Data should be a list
@@ -269,7 +273,7 @@ Create_Draws <- function(
         for (i in 1:n.vars){
             this.params <- Est_Beta(
                 Sum_Data[[i]]$mu, 
-                sum_Data[[i]]$se^2
+                Sum_Data[[i]]$se^2
                 )
             if (i ==1){
                 output[,1] <- rbeta(
@@ -279,7 +283,7 @@ Create_Draws <- function(
                     )
                 
             } else {
-                for (j in 1:n.PSA){
+                for (j in 1:n.psa){
                     continue <- F
                     while(continue==F){
                         this.val <- rbeta(1, 
@@ -302,7 +306,7 @@ Create_Draws <- function(
         for (i in n.vars:1){
             this.params <- Est_Beta(
                 Sum_Data[[i]]$mu, 
-                sum_Data[[i]]$se^2
+                Sum_Data[[i]]$se^2
             )
             if (i == n.vars){
                 output[,n.vars] <- rbeta(
@@ -312,7 +316,7 @@ Create_Draws <- function(
                 )
                 
             } else {
-                for (j in 1:n.PSA){
+                for (j in 1:n.psa){
                     continue <- F
                     while(continue==F){
                         this.val <- rbeta(1, 
@@ -338,7 +342,8 @@ Create_Draws <- function(
             mu.X=Sum_Data[[1]]$mu,
             sd.X=Sum_Data[[1]]$se,
             mu.Y=Sum_Data[[2]]$mu,
-            mu.Y=sum_Data[[2]]$se
+            sd.Y=Sum_Data[[2]]$se,
+            colnames_=names(Sum_Data)
             )$aivm.samples
         
     }
@@ -348,12 +353,13 @@ Create_Draws <- function(
         
         if (n.vars!=2) stop("Only two parameters allowed with this method")
         
-        output <- MakeBCVR.2d(
+        output <- Make_BCVR_2D(
             mu.X=Sum_Data[[1]]$mu,
             sd.X=Sum_Data[[1]]$se,
             mu.Y=Sum_Data[[2]]$mu,
             sd.Y=Sum_Data[[2]]$se,
-            upper=F
+            upper=F,
+            colnames_=names(Sum_Data)
         )$samples
                 
     }
@@ -361,12 +367,13 @@ Create_Draws <- function(
     if (method==9){
         ## Method 9 : Upper Bounded covariance retrofitting
         if (n.vars!=2) stop("Only two parameters allowed with this method")
-        output <- MakeBCVR.2d(
+        output <- Make_BCVR_2D(
             mu.X=Sum_Data[[1]]$mu,
             sd.X=Sum_Data[[1]]$se,
             mu.Y=Sum_Data[[2]]$mu,
             sd.Y=Sum_Data[[2]]$se,
-            upper=T
+            upper=T,
+            colnames_=names(Sum_Data)
         )$samples
         
         

@@ -59,16 +59,46 @@ Bi.M04 <- Create_Draws(
 )
 # Check method 5
 
+Bi.M05 <- Create_Draws(
+    Sum_Data=data.sum,
+    method=5
+    )
+
 # Check method 6
+Bi.M06 <- Create_Draws(
+    Sum_Data=data.sum,
+    method=6
+)
 
 # Check method 7
+Bi.M07 <- Create_Draws(
+    Sum_Data=data.sum,
+    method=7
+)
+
 
 # Check method 8
+Bi.M08 <- Create_Draws(
+    Sum_Data=data.sum,
+    method=8
+    )
+
 
 # Check method 9
+Bi.M09 <- Create_Draws(
+    Sum_Data=data.sum,
+    method=9
+)
 
-# Chech method 10
 
+
+# Check method 10
+
+Bi.M10 <- Create_Draws(
+    Sum_Data=data.sum,
+    method=10,
+    direction="up"
+)
 
 
 
