@@ -207,7 +207,7 @@ Create_Draws <- function(
     
     if (method==2){
         ## Method 2 : Quantile matching/same random number seed        
-        ## Method 1 : Independent Sampling (Naive)
+
         for (i in 1:n.vars){
             this.params <- Est_Beta(
                 Sum_Data[[i]]$mu,
@@ -386,14 +386,19 @@ Create_Draws <- function(
         } else {
             if (direction=="up"){
                 # lowest value is reference
+                this.params <- Est_Beta(
+                    Sum_Data[[1]]$mu, 
+                    Sum_Data[[1]]$se^2
+                )
+                
                 draws.ref <- rbeta(
                     n.psa, 
-                    Sum_Data[[1]]$mu,
-                    Sum_Data[[1]]$se
+                    this.params$a,
+                    this.params$b
                     )
                 output[,1] <- draws.ref
                 
-                for (i in 1:n.vars){
+                for (i in 2:n.vars){
                     
                     this.dif_params <- Get_Dif_Param(
                         Sum_Data[[i-1]]$mu, 
@@ -413,14 +418,18 @@ Create_Draws <- function(
                 }
                 
             } else if (direction=="down"){
+                this.params <- Est_Beta(
+                    Sum_Data[[n.vars]]$mu, 
+                    Sum_Data[[n.vars]]$se^2
+                )
                 draws.ref <- rbeta(
                     n.psa, 
-                    Sum_Data[[n.vars]]$mu,
-                    Sum_Data[[n.vars]]$se
+                    this.params$a,
+                    this.params$b
                 )
                 output[,n.vars] <- draws.ref
                 
-                for (i in n.vars:1){
+                for (i in n.vars:2){
                     
                     this.dif_params <- Get_Dif_Param(
                         Sum_Data[[i-1]]$mu, 
@@ -436,7 +445,7 @@ Create_Draws <- function(
                         this.dif_params$b
                     )
                     
-                    output[,i] <- output[,i+1] - this.deltas
+                    output[,i-1] <- output[,i] - this.deltas
                 }
                 
                 
