@@ -25,250 +25,59 @@ n.psa <- 1000
 
 # Check bootstrap IPD
 
-Bi.Boot <- Bootstrap_Means_IPD(
-    Data.2D,
-    n.reps=n.psa
+Data_Long <- Make_Long(
+    Data.2D
     )
 
-# Check Summarise_IPD
+# Want to make it wide again (because I'm crazy) 
 
-data.sum <- Summarise_IPD(Data.2D)
+Data_Wide <- unstack(
+    Data_Long, 
+    value ~ variable                 
+                     )
 
-
-# Check method 1
-
-Bi.M01 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=1
-    )
-
-# Check method 2
-Bi.M02 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=2
-    )
-# Check method 3
-Bi.M03 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=3
-)
-
-# Check method 4
-Bi.M04 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=4
-)
-# Check method 5
-
-Bi.M05 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=5
-    )
-
-# Check method 6
-Bi.M06 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=6
-)
-
-# Check method 7
-Bi.M07 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=7
-)
-
-
-# Check method 8
-Bi.M08 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=8
-    )
-
-
-# Check method 9
-Bi.M09 <- Create_Draws(
-    Sum_Data=data.sum,
-    method=9
-)
-
-
-
-# Check method 10
-
-Bi.M10u <- Create_Draws(
-    Sum_Data=data.sum,
-    method=10,
-    direction="up"
-)
-
-Bi.M10d <- Create_Draws(
-    Sum_Data=data.sum,
-    method=10,
-    direction="down"
-)
-
-
-# Combine all estimates into a single long dataframe
+tmp <- Data_Long$method[1:length(Data_Long$method) %%2] # Every other variable
 
 Data_Wide <- data.frame(
-    method=c(),
-    variable=c(),
-    value=c()
+    method=tmp, 
+    Data_Wide
     )
+rm(tmp)
 
-tmp <- reshape::melt(
-    data.frame(Bi.M01),
-    measure.vars=c("U1", "U2")
-    )
+g <- ggplot(data=Data_Wide, aes(x=U2, y=U1))
+g2 <- 
 
-##################
-tmp <- data.frame(method="Ind", tmp)
+# > Data_Wide <- reshape::dcast(Data_Long, method ~ variable)
+# Error: 'dcast' is not an exported object from 'namespace:reshape'
+# > Data_Wide <- reshape2::dcast(Data_Long, method ~ variable)
+# Aggregation function missing: defaulting to length
+# > head(Data_wide)
+# Error in head(Data_wide) : 
+#     error in evaluating the argument 'x' in selecting a method for function 'head': Error: object 'Data_wide' not found
+# > head(Data_Wide)
+# method   U1   U2
+# 1           Bootstrapped 1000 1000
+# 2            Independent 1000 1000
+# 3      Quantile Matching 1000 1000
+# 4  Replication (Upwards) 1000 1000
+# 5 Replication (Downwards 1000 1000
+# 6   Resampling (Upwards) 1000 1000
+# > Data_Wide <- reshape2::dcast(Data_Long, method ~ variable, fun.aggregate=mean)
+# > head(Data_Wide)
+# method        U1        U2
+# 1           Bootstrapped 0.5993126 0.5416754
+# 2            Independent 0.5990084 0.5429250
+# 3      Quantile Matching 0.6006302 0.5427822
+# 4  Replication (Upwards) 0.5978000 0.5411227
+# 5 Replication (Downwards 0.6007095 0.5412650
+# 6   Resampling (Upwards) 0.6005380 0.5400699
+# > Data_Wide <- reshape2::dcast(Data_Long, method ~ variable, fun.aggregate=sd)
 
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-    )
+# ggplot of Data_Long
 
-###############
-tmp <- reshape::melt(
-    data.frame(Bi.M02),
-    measure.vars=c("U1", "U2")
-)
 
-tmp <- data.frame(method="Quant Match", tmp)
 
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-##############
-tmp <- reshape::melt(
-    data.frame(Bi.M02),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Quant Match", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-##############
-tmp <- reshape::melt(
-    data.frame(Bi.M03),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Rep Up", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-#############
-tmp <- reshape::melt(
-    data.frame(Bi.M04),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Rep down", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-#############
-tmp <- reshape::melt(
-    data.frame(Bi.M05),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Resamp Up", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-#############
-tmp <- reshape::melt(
-    data.frame(Bi.M06),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Resamp Down", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-#############
-tmp <- reshape::melt(
-    data.frame(Bi.M07),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="AIVM", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-#############
-tmp <- reshape::melt(
-    data.frame(Bi.M08),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="LB", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-tmp <- reshape::melt(
-    data.frame(Bi.M09),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="UB", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-tmp <- reshape::melt(
-    data.frame(Bi.M10),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Diff Up", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
-tmp <- reshape::melt(
-    data.frame(Bi.M10d),
-    measure.vars=c("U1", "U2")
-)
-
-tmp <- data.frame(method="Diff Down", tmp)
-
-Data_Wide <- rbind(
-    Data_Wide, 
-    tmp
-)
-
+####
 # Make PSA
 
 # Method 1
@@ -276,5 +85,26 @@ Data_Wide <- rbind(
 
 
 # Generate Figures
+
+
+####################### Notes of actions from Manuscript
+
+# Figures
+# Redraw all figures in ggplot2
+# First part (all ten methods)
+# Label axes as 'better health state' & 'worse health state
+#     Second part (subset of methods)
+#         label axes as 'low health state', 'moderate health state', 'high health state'
+#     Include names of methods in figures
+#     Look at density plot equivalents of violin plots
+#     ACTION: include multiple measures of central tendency in violin plots/density plots
+# Further analyses
+#     IPD
+#         Additional two state IPD
+#             Example where not all individual differences were positive
+#         Additional three state IPD
+#     Aggregate
+#         Two state Different N
+#         Three state different N
 
 

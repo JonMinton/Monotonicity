@@ -461,7 +461,107 @@ Create_Draws <- function(
 
 
 
+# Function for producing Long Data with all methods, given only the Summary data and IPD
 
+Make_Long <- function(
+    IPD=NULL,
+    Sum_Data_=NULL,
+    n.psa=1000,
+    Methods_to_Use=1:11,
+    Methods.labels=c(
+        "Independent",
+        "Quantile Matching",
+        "Replication (Upwards)",
+        "Replication (Downwards",
+        "Resampling (Upwards)",
+        "Resampling (Downwards)",
+        "Average Individual Variances",
+        "Covariance Fitting (Lower Bounded)",
+        "Covariance Fitting (Upper Bounded)",
+        "Difference (Upwards)", 
+        "Difference (Downwards)"
+        ),
+    ...
+    ){
+    # Cases:
+    # 1) IPD but no Sum
+    # 2) Sum but not IPD
+    # 3) Sum and IPD
+    
+    if (!is.null(IPD)){
+        print("Making bootstraps using IPD")
+        PSA.Boot <- Bootstrap_Means_IPD(
+            IPD,
+            n.reps=n.psa
+        )
+        Variable.labels <- colnames(PSA.Boot)
+        if (is.null(Sum_Data_)){
+            print("Sum_Data_ not found, so making Sum_Data from IPD")
+            Sum_Data_ <- Summarise_IPD(
+                IPD
+                )
+            
+        }
+        if (!(exists("Variable.labels"))){
+            Variable.labels <- colnames(Sum_Data_)
+        }
+    }
+    
+    n.methods <- length(Methods_to_Use)
+    
+    Methods_Block <- vector("list", length=n.methods)
+    
+    names(Methods_Block) <- Methods.labels
+    
+    Output <- data.frame(
+        method=c(),
+        variable=c(),
+        value=c()
+        )
+    
+    if (exists("PSA.Boot")){
+        tmp <- reshape::melt(
+            data.frame(PSA.Boot),
+            measure.vars=Variable.labels
+            )
+        tmp <- data.frame(
+            method="Bootstrapped",
+            tmp
+            )
+        
+        Output <- rbind(
+            Output,
+            tmp
+            )
+    }
+    
+    for (i in 1:n.methods){
+        Methods_Block[[i]] <- Create_Draws(
+            Sum_Data=Sum_Data_,
+            method=i
+            )
+        
+        
+        tmp <- reshape::melt(
+            data.frame(Methods_Block[[i]]),
+            measure.vars=Variable.labels
+        )
+        
+        tmp <- data.frame(
+            method=Methods.labels[i],
+            tmp
+            )
+                
+        Output <- rbind(
+            Output, 
+            tmp
+        )
+        
+    }
+    
+    return(Output)
+    
+}
 
 # 
 # 
