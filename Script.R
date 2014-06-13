@@ -29,65 +29,75 @@ Data_Long <- Make_Long(
     Data.2D
     )
 
-# Want to make it wide again (because I'm crazy) 
-
-Data_Wide <- unstack(
-    Data_Long, 
-    value ~ variable                 
-                     )
-
-tmp <- Data_Long$method[1:length(Data_Long$method) %%2] # Every other variable
-
-Data_Wide <- data.frame(
-    method=tmp, 
-    Data_Wide
-    )
-rm(tmp)
-
-g <- ggplot(data=Data_Wide, aes(x=U2, y=U1))
-g2 <- 
-
-# > Data_Wide <- reshape::dcast(Data_Long, method ~ variable)
-# Error: 'dcast' is not an exported object from 'namespace:reshape'
-# > Data_Wide <- reshape2::dcast(Data_Long, method ~ variable)
-# Aggregation function missing: defaulting to length
-# > head(Data_wide)
-# Error in head(Data_wide) : 
-#     error in evaluating the argument 'x' in selecting a method for function 'head': Error: object 'Data_wide' not found
-# > head(Data_Wide)
-# method   U1   U2
-# 1           Bootstrapped 1000 1000
-# 2            Independent 1000 1000
-# 3      Quantile Matching 1000 1000
-# 4  Replication (Upwards) 1000 1000
-# 5 Replication (Downwards 1000 1000
-# 6   Resampling (Upwards) 1000 1000
-# > Data_Wide <- reshape2::dcast(Data_Long, method ~ variable, fun.aggregate=mean)
-# > head(Data_Wide)
-# method        U1        U2
-# 1           Bootstrapped 0.5993126 0.5416754
-# 2            Independent 0.5990084 0.5429250
-# 3      Quantile Matching 0.6006302 0.5427822
-# 4  Replication (Upwards) 0.5978000 0.5411227
-# 5 Replication (Downwards 0.6007095 0.5412650
-# 6   Resampling (Upwards) 0.6005380 0.5400699
-# > Data_Wide <- reshape2::dcast(Data_Long, method ~ variable, fun.aggregate=sd)
-
-# ggplot of Data_Long
+Data_Wide <- cast(Data_Long, method + sample  ~ variable)
 
 
+g <- ggplot(data=Data_Wide, aes(x=U1, y=U2))
+g2 <- g + geom_point() + facet_wrap("method") 
+g3 <- g2 + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
+g4 <- g3 + coord_cartesian(xlim=c(0.45,0.7), ylim=c(0.45,0.7)) + coord_fixed()
+g4 + xlab("Better health state") + ylab("Worse health state")
 
-####
-# Make PSA
+# TO DO: 
+# make the aspect ratio 1
 
-# Method 1
+# Want to create something that shows densities of values:
+#U1,
+#U2
+#U2-U1
+
+# Each time overlays with bootstrapped
+
+Data_Wide <- data.frame(Data_Wide, difference=Data_Wide$U1 - Data_Wide$U2)
+
+# U1
+g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U1)) + geom_density(fill="grey")
+g2 <- g + facet_wrap("method")
+g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U1), col="blue", width=1.1, lty="dashed")
+g3
+
+# U2 
+g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U2)) + geom_density(fill="grey")
+g2 <- g + facet_wrap("method")
+g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U2), col="blue", width=1.2, lty="dashed")
+g3
+
+# difference 
+g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=difference)) + geom_density(fill="grey")
+g2 <- g + facet_wrap("method")
+g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$difference), col="blue", width=1.2, lty="dashed")
+g3
 
 
+# Table summaries
+C1 <- cast(D2, method ~ variable, function(x) c(mean=mean(x), sd=sd(x), quantile(x, c(0.025, 0.5, 0.975))))
 
-# Generate Figures
+# draw as dotplot
+
+     ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U1_X50.,
+                                ymin=U1_X2.5., ymax=U1_X97.5.)) + 
+         geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X2.5.), lty="dashed") +
+    xlab("Method\n") + ylab("\n Quantile Range") +
+         coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X97.5.), lty="dashed") +
+    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X50.))
 
 
-####################### Notes of actions from Manuscript
+ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U2_X50.,
+                                                     ymin=U2_X2.5., ymax=U2_X97.5.)) + 
+    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X2.5.), lty="dashed") +
+    xlab("Method\n") + ylab("\n Quantile Range") +
+    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X97.5.), lty="dashed") +
+    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X50.))
+
+ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= difference_X50.,
+                                                     ymin=difference_X2.5., ymax=difference_X97.5.)) + 
+    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X2.5.), lty="dashed") +
+    xlab("Method\n") + ylab("\n Quantile Range") +
+    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X97.5.), lty="dashed") +
+    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X50.))
+
+C2 <- cast(D2, method ~ variable, function(x) round(c(mean=mean(x), sd=sd(x), quantile(x, seq(from=0.025, to=0.975, by=0.05))), digits=3))
+
 
 # Figures
 # Redraw all figures in ggplot2

@@ -180,7 +180,6 @@ Create_Draws <- function(
     n.psa=1000,
     ###
     seed=80,
-    direction="up",
     ...
     ){
     # Sum_Data should be a list
@@ -380,11 +379,8 @@ Create_Draws <- function(
     }
     
     if (method==10){
-        ## Method 10: Beta distribution difference modelling
-        if (!exists("direction")) {
-            stop("The variable direction must be specified for this method")
-        } else {
-            if (direction=="up"){
+        ## Method 10: Beta distribution difference modelling : upwards
+
                 # lowest value is reference
                 this.params <- Est_Beta(
                     Sum_Data[[1]]$mu, 
@@ -414,47 +410,44 @@ Create_Draws <- function(
                         this.dif_params$b
                         )
                     
-                    output[,i] <- output[,i-1] + this.deltas
+                    output[,i] <- output[,i-1] - this.deltas
                 }
                 
-            } else if (direction=="down"){
-                this.params <- Est_Beta(
-                    Sum_Data[[n.vars]]$mu, 
-                    Sum_Data[[n.vars]]$se^2
-                )
-                draws.ref <- rbeta(
-                    n.psa, 
-                    this.params$a,
-                    this.params$b
-                )
-                output[,n.vars] <- draws.ref
-                
-                for (i in n.vars:2){
-                    
-                    this.dif_params <- Get_Dif_Param(
-                        Sum_Data[[i-1]]$mu, 
-                        Sum_Data[[i-1]]$se,
-                        
-                        Sum_Data[[i]]$mu,
-                        Sum_Data[[i]]$se
-                    )
-                    
-                    this.deltas <- rbeta(
-                        n.psa,
-                        this.dif_params$a,
-                        this.dif_params$b
-                    )
-                    
-                    output[,i-1] <- output[,i] - this.deltas
-                }
-                
-                
-            } else stop("value of direction not valid: must be either down or up")
+            }
+    
+    if (method == 11){
+        # Beta, downwards
+        this.params <- Est_Beta(
+            Sum_Data[[n.vars]]$mu, 
+            Sum_Data[[n.vars]]$se^2
+        )
+        draws.ref <- rbeta(
+            n.psa, 
+            this.params$a,
+            this.params$b
+        )
+        output[,n.vars] <- draws.ref
             
+        for (i in n.vars:2){
+            
+            this.dif_params <- Get_Dif_Param(
+                Sum_Data[[i-1]]$mu, 
+                Sum_Data[[i-1]]$se,
+                
+                Sum_Data[[i]]$mu,
+                Sum_Data[[i]]$se
+            )
+            
+            this.deltas <- rbeta(
+                n.psa,
+                this.dif_params$a,
+                this.dif_params$b
+            )
+        
+            output[,i-1] <- output[,i] + this.deltas
         }
-    
     }
-    
+
     ###
     return(output)
 }
@@ -471,15 +464,15 @@ Make_Long <- function(
     Methods.labels=c(
         "Independent",
         "Quantile Matching",
-        "Replication (Upwards)",
-        "Replication (Downwards",
-        "Resampling (Upwards)",
-        "Resampling (Downwards)",
+        "Replication\n(Upwards)",
+        "Replication\n(Downwards)",
+        "Resampling\n(Upwards)",
+        "Resampling\n(Downwards)",
         "Average Individual Variances",
-        "Covariance Fitting (Lower Bounded)",
-        "Covariance Fitting (Upper Bounded)",
-        "Difference (Upwards)", 
-        "Difference (Downwards)"
+        "Covariance Fitting\n(Lower Bounded)",
+        "Covariance Fitting\n(Upper Bounded)",
+        "Difference\n(Upwards)", 
+        "Difference\n(Downwards)"
         ),
     ...
     ){
@@ -526,6 +519,7 @@ Make_Long <- function(
             )
         tmp <- data.frame(
             method="Bootstrapped",
+            sample=1:n.psa,
             tmp
             )
         
@@ -549,6 +543,7 @@ Make_Long <- function(
         
         tmp <- data.frame(
             method=Methods.labels[i],
+            sample=1:n.psa,
             tmp
             )
                 
@@ -563,6 +558,18 @@ Make_Long <- function(
     
 }
 
+
+
+# Based on Gandrud's code
+Make_Caterpillar <- function(DF){
+#     ggplot(data= NBSub2DF, aes(x=reorder(Variable, X2.5.), y= Mean,
+#                                ymin=X2.5., ymax=X97.5.)) + 
+#         geom_pointrange(size=1.4) + 
+#         geom_hline(aes(intercept= 0), linetype="dotted") +
+#         xlab("Variable\n") + ylab("\n Coefficient Estimate") +
+#         coord_flip() 
+    
+}
 # 
 # 
 # ############################################################################################################################
