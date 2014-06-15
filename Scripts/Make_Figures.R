@@ -57,9 +57,11 @@ g3 <- g2 + geom_density(
     )
 
 g4 <- g3 + xlab("Distribution of differences in paired estimates")
-g5 <- g4 + ylim(0,200)
-print(g5)
+g5 <- g4 + coord_cartesian(ylim=c(0,100))
+g6 <- g5 + geom_vline(mapping=aes(x=0), colour="red", linetype="dashed")
+print(g6)
 dev.off()
+
 
 
 
