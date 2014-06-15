@@ -21,82 +21,27 @@ source("Scripts/Functions.R")
 
 # Stage global variables (e.g. N.psa)
 
-n.psa <- 1000
+n.psa <- 100000
 
 # Check bootstrap IPD
 
-Data_Long <- Make_Long(
-    Data.2D
-    )
-
-Data_Wide <- cast(Data_Long, method + sample  ~ variable)
+source("Scripts/Make_Sample_Data.R")
 
 
-g <- ggplot(data=Data_Wide, aes(x=U1, y=U2))
-g2 <- g + geom_point() + facet_wrap("method") 
-g3 <- g2 + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
-g4 <- g3 + coord_cartesian(xlim=c(0.45,0.7), ylim=c(0.45,0.7)) + coord_fixed()
-g4 + xlab("Better health state") + ylab("Worse health state")
-
-# TO DO: 
-# make the aspect ratio 1
-
-# Want to create something that shows densities of values:
-#U1,
-#U2
-#U2-U1
-
-# Each time overlays with bootstrapped
-
-Data_Wide <- data.frame(Data_Wide, difference=Data_Wide$U1 - Data_Wide$U2)
-
-# U1
-g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U1)) + geom_density(fill="grey")
-g2 <- g + facet_wrap("method")
-g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U1), col="blue", width=1.1, lty="dashed")
-g3
-
-# U2 
-g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U2)) + geom_density(fill="grey")
-g2 <- g + facet_wrap("method")
-g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U2), col="blue", width=1.2, lty="dashed")
-g3
-
-# difference 
-g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=difference)) + geom_density(fill="grey")
-g2 <- g + facet_wrap("method")
-g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$difference), col="blue", width=1.2, lty="dashed")
-g3
-
-
-# Table summaries
-C1 <- cast(D2, method ~ variable, function(x) c(mean=mean(x), sd=sd(x), quantile(x, c(0.025, 0.5, 0.975))))
-
-# draw as dotplot
-
-     ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U1_X50.,
-                                ymin=U1_X2.5., ymax=U1_X97.5.)) + 
-         geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X2.5.), lty="dashed") +
-    xlab("Method\n") + ylab("\n Quantile Range") +
-         coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X97.5.), lty="dashed") +
-    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X50.))
-
-
-ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U2_X50.,
-                                                     ymin=U2_X2.5., ymax=U2_X97.5.)) + 
-    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X2.5.), lty="dashed") +
-    xlab("Method\n") + ylab("\n Quantile Range") +
-    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X97.5.), lty="dashed") +
-    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X50.))
-
-ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= difference_X50.,
-                                                     ymin=difference_X2.5., ymax=difference_X97.5.)) + 
-    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X2.5.), lty="dashed") +
-    xlab("Method\n") + ylab("\n Quantile Range") +
-    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X97.5.), lty="dashed") +
-    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X50.))
 
 C2 <- cast(D2, method ~ variable, function(x) round(c(mean=mean(x), sd=sd(x), quantile(x, seq(from=0.025, to=0.975, by=0.05))), digits=3))
+
+
+source("scripts/Make_Figures.R")
+
+
+
+# To do:
+
+# Add dynamic notebooks which record critical parameters, summaries etc.
+# Add subsection showing dependence of AIVM and cov methods on number of draws
+# produce tables and caterpillar plots showing distribution of parameters
+
 
 
 # Figures

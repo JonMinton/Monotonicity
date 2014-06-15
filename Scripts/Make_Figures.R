@@ -6,6 +6,90 @@
 # ####################################### RESULTS ############################################
 # 
 # # want to plot scatter
+
+tiff("Figures/Fig_01.tiff", 1000,1000) 
+g <- ggplot(data=Data_Wide, aes(x=U1, y=U2))
+g2 <- g + geom_point() + facet_wrap(~ method, nrow=3) 
+g3 <- g2 + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
+g4 <- g3 + coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7))
+g5 <- g4 + xlab("Better health state") + ylab("Worse health state")
+print(g5)
+dev.off()
+
+# Want to create something that shows densities of values:
+#U1,
+#U2
+#U2-U1
+
+# Each time overlays with bootstrapped
+
+
+
+# U1 : better health state
+tiff("Figures/Fig_02.tiff", 1200, 800)
+g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U1)) + geom_density(fill="grey")
+g2 <- g + facet_wrap("method", nrow=4)
+g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U1), col="blue", width=1.1, lty="dashed")
+g4 <- g3 + xlab("Distribution of estimates of better health state")
+print(g4)
+dev.off()
+
+
+# U2 : worse health state
+tiff("Figures/Fig_03.tiff", 1200, 800)
+g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U2)) + geom_density(fill="grey")
+g2 <- g + facet_wrap("method", nrow=4)
+g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U2), col="blue", width=1.2, lty="dashed")
+g4 <- g3 + xlab("Distribution of estimates of worse health state")
+print(g4)
+dev.off()
+
+
+
+# difference
+tiff("Figures/Fig_04.tiff", 1200, 800)
+g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=difference)) + geom_density(fill="grey")
+g2 <- g + facet_wrap("method", nrow=4)
+g3 <- g2 + geom_density(
+    aes(x=subset(Data_Wide, method=="Bootstrapped")$difference), 
+    col="blue", width=1.2, lty="dashed",
+    trim=T
+    )
+
+g4 <- g3 + xlab("Distribution of differences in paired estimates")
+g5 <- g4 + ylim(0,200)
+print(g5)
+dev.off()
+
+
+
+
+
+tiff("Figures/Fig_04.tiff", 1200, 1200)
+ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U1_X50.,
+                                                     ymin=U1_X2.5., ymax=U1_X97.5.)) + 
+    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X2.5.), lty="dashed") +
+    xlab("Method\n") + ylab("\n Quantile Range") +
+    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X97.5.), lty="dashed") +
+    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X50.))
+
+
+ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U2_X50.,
+                                                     ymin=U2_X2.5., ymax=U2_X97.5.)) + 
+    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X2.5.), lty="dashed") +
+    xlab("Method\n") + ylab("\n Quantile Range") +
+    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X97.5.), lty="dashed") +
+    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X50.))
+
+ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= difference_X50.,
+                                                     ymin=difference_X2.5., ymax=difference_X97.5.)) + 
+    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X2.5.), lty="dashed") +
+    xlab("Method\n") + ylab("\n Quantile Range") +
+    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X97.5.), lty="dashed") +
+    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X50.))
+
+
+# draw as dotplot
 # 
 # 
 # # want bootstrapped estimates of means to compare
@@ -42,7 +126,6 @@
 #      main="a) Bootstrapped")
 # abline(0,1)
 # 
-p <- ggplot(aes(x=))
 # screen(3)
 # plot(u2 ~ u1, data=MethodsBlock$method01, xlim=c(0.45, 0.7), ylim=c(0.45,0.7),  
 #      xlab=expression(italic(U)[1]), ylab=expression(italic(U)[2]),
@@ -564,3 +647,18 @@ p <- ggplot(aes(x=))
 # 
 # 
 # PSA.method10 <- data.frame(u1 = rU1, u2=rU2)
+
+# # Toy example of problem
+# 
+# xval <- rnorm(10000)
+# 
+# #Base1
+# plot(density(xval)) 
+# #Base2
+# plot(density(xval), ylim=c(0, 0.3)) # densities > 0.3 not removed from plot
+# 
+# xval <- as.data.frame(xval)
+# 
+# ggplot(xval, aes(x=xval)) + geom_density() #gg1 - looks like Base1
+# ggplot(xval, aex(x=xval)) + geom_density() + ylim(0, 0.3) 
+# #gg2: does not look like Base2 due to removal of density values > 0.3

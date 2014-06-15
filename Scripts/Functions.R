@@ -553,6 +553,9 @@ Make_Long <- function(
         )
         
     }
+    # Code to turn into 'molten' dataframe, rather than just something with molten structure
+    D2 <- cast(Output, method + sample ~ variable, mean)
+    Output <- melt(D2, id.var=c("method", "sample"))
     
     return(Output)
     
