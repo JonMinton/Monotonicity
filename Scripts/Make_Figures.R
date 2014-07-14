@@ -7,47 +7,39 @@
 # 
 # # want to plot scatter
 
-tiff("Figures/Fig_01.tiff", 1000,1000) 
+tiff("figures/fig_01.tiff", 1100,1100) 
 g <- ggplot(data=Data_Wide, aes(x=U1, y=U2))
 g2 <- g + geom_point() + facet_wrap(~ method, nrow=3) 
 g3 <- g2 + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
 g4 <- g3 + coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7))
-g5 <- g4 + xlab("Better health state") + ylab("Worse health state")
-print(g5)
+g5 <- g4 + xlab("Higher parameter") + ylab("Lower parameter")
+g6 <- g5 + theme(text=element_text(size=16))
+print(g6)
 dev.off()
 
-# Want to create something that shows densities of values:
-#U1,
-#U2
-#U2-U1
 
-# Each time overlays with bootstrapped
-
-
-
-# U1 : better health state
-tiff("Figures/Fig_02.tiff", 1200, 800)
+tiff("figures/fig_02.tiff", 1200, 800)
 g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U1)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
 g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U1), col="blue", width=1.1, lty="dashed")
-g4 <- g3 + xlab("Distribution of estimates of better health state")
+g4 <- g3 + xlab("Distribution of estimates for higher parameter")
 print(g4)
 dev.off()
 
 
 # U2 : worse health state
-tiff("Figures/Fig_03.tiff", 1200, 800)
+tiff("figures/fig_03.tiff", 1200, 800)
 g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U2)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
 g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U2), col="blue", width=1.2, lty="dashed")
-g4 <- g3 + xlab("Distribution of estimates of worse health state")
+g4 <- g3 + xlab("Distribution of estimates for lower parameter")
 print(g4)
 dev.off()
 
 
 
 # difference
-tiff("Figures/Fig_04.tiff", 1200, 800)
+tiff("figures/fig_04.tiff", 1200, 800)
 g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=difference)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
 g3 <- g2 + geom_density(
@@ -58,37 +50,59 @@ g3 <- g2 + geom_density(
 
 g4 <- g3 + xlab("Distribution of differences in paired estimates")
 g5 <- g4 + coord_cartesian(ylim=c(0,100))
-g6 <- g5 + geom_vline(mapping=aes(x=0), colour="red", linetype="dashed")
+g6 <- g5 + geom_vline(mapping=aes(x=0), colour="red")
 print(g6)
 dev.off()
 
 
 
+####
+source("scripts/make_summaries_dataframes.r")
+
+
+tiff("figures/fig_05.tiff", 1200, 800)
+levels(Summaries.RMS$var) <- c("Difference", "Higher", "Lower")
+
+g1 <- ggplot(data=Summaries.RMS) + aes(y=method, x=value) + geom_point(size=3) 
+g2 <- g1 + facet_wrap(  ~ var) + labs (x="Root mean squared error", y="Method")
+print(g2)
+
+dev.off()
+
+
+############################################################################################################################
+############################################################################################################################
 
 
 
-tiff("Figures/Fig_04.tiff", 1200, 1200)
-ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U1_X50.,
-                                                     ymin=U1_X2.5., ymax=U1_X97.5.)) + 
-    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X2.5.), lty="dashed") +
-    xlab("Method\n") + ylab("\n Quantile Range") +
-    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X97.5.), lty="dashed") +
-    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X50.))
+# 
+# 
+# 
+# tiff("Figures/Fig_04.tiff", 1200, 1200)
+# ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U1_X50.,
+#                                                      ymin=U1_X2.5., ymax=U1_X97.5.)) + 
+#     geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X2.5.), lty="dashed") +
+#     xlab("Method\n") + ylab("\n Quantile Range") +
+#     coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X97.5.), lty="dashed") +
+#     geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U1_X50.))
+# 
+# 
+# ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U2_X50.,
+#                                                      ymin=U2_X2.5., ymax=U2_X97.5.)) + 
+#     geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X2.5.), lty="dashed") +
+#     xlab("Method\n") + ylab("\n Quantile Range") +
+#     coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X97.5.), lty="dashed") +
+#     geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X50.))
+# 
+# ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= difference_X50.,
+#                                                      ymin=difference_X2.5., ymax=difference_X97.5.)) + 
+#     geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X2.5.), lty="dashed") +
+#     xlab("Method\n") + ylab("\n Quantile Range") +
+#     coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X97.5.), lty="dashed") +
+#     geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X50.))
+# 
+# 
 
-
-ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= U2_X50.,
-                                                     ymin=U2_X2.5., ymax=U2_X97.5.)) + 
-    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X2.5.), lty="dashed") +
-    xlab("Method\n") + ylab("\n Quantile Range") +
-    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X97.5.), lty="dashed") +
-    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$U2_X50.))
-
-ggplot(data= subset(C1, method!="Bootstrapped"), aes(x=method, y= difference_X50.,
-                                                     ymin=difference_X2.5., ymax=difference_X97.5.)) + 
-    geom_pointrange(size=1.4) + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X2.5.), lty="dashed") +
-    xlab("Method\n") + ylab("\n Quantile Range") +
-    coord_flip() + geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X97.5.), lty="dashed") +
-    geom_hline(aes(yintercept=subset(C1, method=="Bootstrapped")$difference_X50.))
 
 
 # draw as dotplot

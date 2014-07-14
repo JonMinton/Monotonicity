@@ -6,17 +6,27 @@ rm (list=ls())
 # Stages: 
 
 # Load prerequisites
-require(MASS)
-require(xlsx)
-require(ggplot2)
-require(reshape)
-require(gdata)
 
+source("scripts/LoadPackages.R")
 
+RequiredPackages(
+    c(
+        "MASS",
+        "xlsx",
+        "ggplot2",
+        "reshape",
+        "gdata",
+        "devtools",
+        "plyr"
+        )
+    )
+
+## The 
+## devtools::install_github("rstudio/rmarkdown")
 
 
 # Load functions
-source("Scripts/Functions.R")
+source("scripts/functions.r")
 
 
 # Stage global variables (e.g. N.psa)
@@ -25,48 +35,10 @@ n.psa <- 100000
 
 # Check bootstrap IPD
 
-source("Scripts/Manage_Data.R")
+source("Scripts/manage_data.r")
 
 
-Summaries.MeanSD <- cast(
-    Data_Long, 
-    method ~ variable, 
-    function(x) c(mean=mean(x), sd=sd(x))
-)
 
-Summaries.Quantiles <- cast(
-    Data_Long,
-    method ~ variable,
-    quantile,
-    seq(from=0.025, to=0.975, by=0.05)
-    )
-
-Summaries.Difs <- cbind(
-    Summaries.Quantiles[-1,1],
-    adply(Summaries.Quantiles[-1,-1],1, function(x) ((x - Summaries.Quantiles[1,-1])^2))
-    )
-
-names(Summaries.Difs)[1] <- "method"
-Summaries.Difs.Long <- melt(Summaries.Difs, id.var="method")
-Summaries.Difs.Long <- cbind(Summaries.Difs.Long, colsplit(Summaries.Difs.Long$variable, "_", c("var", "quantile")))
-Summaries.Difs.Long <- gdata::remove.vars(Summaries.Difs.Long, "variable")
-
-Summaries.RMS <- ddply(Summaries.Difs.Long, .(method, var),function(x) (rms=mean(x$value))^0.5)
-
-attach(Summaries.RMS)
-Summaries.RMS <- Summaries.RMS[order(var, method),]
-detach(Summaries.RMS)
-
-Summaries.RMS <- rename.vars(Summaries.RMS, from="V1", to="value")
-
-Summaries.RMS$method <- factor(Summaries.RMS$method,
-                               levels=rev(levels(Summaries.RMS$method))
-                                   )
-qplot(x=method, y=value, data=Summaries.RMS, facets = . ~  var, geom="bar")+ coord_flip() 
-
-g1 <- ggplot(data=Summaries.RMS) + geom_linerange(aes(x=method, ymax=value, ymin=0), size=1.2) + coord_flip() 
-g2 <- g1 + facet_wrap(  ~ var) 
-g2
 
 
 # What I want: a RMS summary measure
