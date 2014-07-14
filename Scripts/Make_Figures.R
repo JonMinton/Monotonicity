@@ -5,9 +5,41 @@
 # 
 # ####################################### RESULTS ############################################
 # 
-# # want to plot scatter
+# # want to plot scat
 
-tiff("figures/fig_01.tiff", 1100,1100) 
+# Toy example:
+tiff("figures/fig_01.tiff", 300,300) 
+toy_data <- data.frame(
+    bad=rnorm(10000, 0.20, 1.0),
+    good=rnorm(10000, 0.6, 0.4)
+    )
+
+g <- ggplot(toy_data) + geom_density(aes(x=bad), fill="red", alpha=0.2) + geom_density(aes(x=good), fill="blue", alpha=0.2)
+
+
+theme_myblank <- theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+      axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
+
+g2 <- g + theme_myblank
+
+print(g2)
+
+dev.off()
+
+
+
+
+tiff("figures/fig_02.tiff", 1100,1100) 
 g <- ggplot(data=Data_Wide, aes(x=U1, y=U2))
 g2 <- g + geom_point() + facet_wrap(~ method, nrow=3) 
 g3 <- g2 + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
@@ -18,7 +50,7 @@ print(g6)
 dev.off()
 
 
-tiff("figures/fig_02.tiff", 1200, 800)
+tiff("figures/fig_03.tiff", 1200, 800)
 g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U1)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
 g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U1), col="blue", width=1.1, lty="dashed")
@@ -28,7 +60,7 @@ dev.off()
 
 
 # U2 : worse health state
-tiff("figures/fig_03.tiff", 1200, 800)
+tiff("figures/fig_04.tiff", 1200, 800)
 g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=U2)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
 g3 <- g2 + geom_density(aes(x=subset(Data_Wide, method=="Bootstrapped")$U2), col="blue", width=1.2, lty="dashed")
@@ -39,7 +71,7 @@ dev.off()
 
 
 # difference
-tiff("figures/fig_04.tiff", 1200, 800)
+tiff("figures/fig_05.tiff", 1200, 800)
 g <- ggplot(subset(Data_Wide, method!="Bootstrapped"), aes(x=difference)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
 g3 <- g2 + geom_density(
@@ -60,7 +92,7 @@ dev.off()
 source("scripts/make_summaries_dataframes.r")
 
 
-tiff("figures/fig_05.tiff", 1200, 800)
+tiff("figures/fig_06.tiff", 1200, 800)
 levels(Summaries.RMS$var) <- c("Difference", "Higher", "Lower")
 
 g1 <- ggplot(data=Summaries.RMS) + aes(y=method, x=value) + geom_point(size=3) 
