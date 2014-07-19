@@ -1,8 +1,8 @@
 
 
-Data_Long <- Make_Long(
-    Data.2D,
-    Methods.labels=c(
+data_long <- make_long(
+    data_2d,
+    methods.labels=c(
         "Independent",
         "Quantile Matching",
         "Replication\n(Upwards)",
@@ -17,8 +17,11 @@ Data_Long <- Make_Long(
     )
 )
 
+print("made data")
 
-Data_Wide <- cast(Data_Long, method + sample  ~ variable)
-Data_Wide <- data.frame(Data_Wide, difference=Data_Wide$U1 - Data_Wide$U2)
+data_wide <- cast(data_long, method + sample  ~ variable)
+data_wide <- mutate(data_wide, difference = u1 - u2)
 
-Data_Long <- melt(Data_Wide, id=c("method", "sample"))
+data_long <- melt(data_wide, id=c("method", "sample"))
+
+print

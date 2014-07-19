@@ -1,34 +1,33 @@
 
-
-Summaries.MeanSD <- cast(
-    Data_Long, 
+summaries_mean_sd <- cast(
+    data_long, 
     method ~ variable, 
     function(x) c(mean=mean(x), sd=sd(x))
 )
 
-Summaries.Quantiles <- cast(
-    Data_Long,
+summaries_quintiles <- cast(
+    data_long,
     method ~ variable,
     quantile,
     seq(from=0.025, to=0.975, by=0.05)
 )
 
-Summaries.Difs <- cbind(
-    Summaries.Quantiles[-1,1],
-    adply(Summaries.Quantiles[-1,-1],1, function(x) ((x - Summaries.Quantiles[1,-1])^2))
+summaries_difs <- cbind(
+    summaries_quintiles[-1,1],
+    adply(summaries_quintiles[-1,-1],1, function(x) ((x - summaries_quintiles[1,-1])^2))
 )
 
-names(Summaries.Difs)[1] <- "method"
-Summaries.Difs.Long <- melt(Summaries.Difs, id.var="method")
-Summaries.Difs.Long <- cbind(Summaries.Difs.Long, colsplit(Summaries.Difs.Long$variable, "_", c("var", "quantile")))
-Summaries.Difs.Long <- gdata::remove.vars(Summaries.Difs.Long, "variable")
+names(summaries_difs)[1] <- "method"
+summaries_difs_long <- melt(summaries_difs, id.var="method")
+summaries_difs_long <- cbind(summaries_difs_long, colsplit(summaries_difs_long$variable, "_", c("var", "quantile")))
+summaries_difs_long <- gdata::remove.vars(summaries_difs_long, "variable")
 
-Summaries.RMS <- ddply(Summaries.Difs.Long, .(method, var),function(x) (rms=mean(x$value))^0.5)
+summaries_rms <- ddply(summaries_difs_long, .(method, var),function(x) (rms=mean(x$value))^0.5)
 
-Summaries.RMS <- arrange(Summaries.RMS, var, method)
+summaries_rms <- arrange(summaries_rms, var, method)
 
-Summaries.RMS <- rename.vars(Summaries.RMS, from="V1", to="value")
+summaries_rms <- rename.vars(summaries_rms, from="V1", to="value")
 
-Summaries.RMS$method <- factor(Summaries.RMS$method,
-                               levels=rev(levels(Summaries.RMS$method))
+summaries_rms$method <- factor(summaries_rms$method,
+                               levels=rev(levels(summaries_rms$method))
 )

@@ -6,17 +6,17 @@
 # save the samples
 
 # Load data
-source("Scripts/Read_Data.R")
+source("scripts/read_data.r")
 
-if (!file.exists("Data/RObj/Samples_2D.RData")){
+if (!file.exists("data/robj/samples_2d.rdata")){
     print("Not found Samples Data. Creating from scratch")
-    source("Scripts/Make_Sample_Data.R")
+    source("scripts/make_sample_data.r")
     
     print("Saving created data")
-    save(Data_Long, Data_Wide, file="Data/RObj/Samples_2D.RData")
+    save(data_long, data_wide, file="data/robj/samples_2d.rdata")
     
 } else {
     print("Found Samples Data. Loading.")
-    load("Data/RObj/Samples_2D.RData")
+    load("data/robj/samples_2d.rdata")
     
 }
