@@ -350,7 +350,7 @@ create_draws <- function(
     if (method==8){
         ## Method 8 : Lower bounded covariance retrofitting
         
-        if (n.vars!=2) stop("Only two parameters allowed with this method")
+        if (n_vars!=2) stop("Only two parameters allowed with this method")
         
         output <- make_bcvr_2d(
             mu_x=summary_data[[1]]$mu,
@@ -365,7 +365,7 @@ create_draws <- function(
     
     if (method==9){
         ## Method 9 : Upper Bounded covariance retrofitting
-        if (n.vars!=2) stop("Only two parameters allowed with this method")
+        if (n_vars!=2) stop("Only two parameters allowed with this method")
         output <- make_bcvr_2d(
             mu_x=summary_data[[1]]$mu,
             sd_x=summary_data[[1]]$se,
@@ -394,7 +394,7 @@ create_draws <- function(
                     )
                 output[,1] <- draws_ref
                 
-                for (i in 2:n.vars){
+                for (i in 2:n_vars){
                     
                     dif_params.this <- get_dif_param(
                         summary_data[[i-1]]$mu, 
@@ -534,7 +534,7 @@ make_long <- function(
             summary_data=summary_data_,
             method=i
             )
-        browser()
+
         
         
         

@@ -1,7 +1,10 @@
-
+data_summaries <- summarise_ipd(
+    data_2d
+    )
 
 data_long <- make_long(
-    data_2d,
+    ipd=data_2d,
+    summary_data=data_summaries,
     n_psa=N_PSA,
     methods.labels=c(
         "Independent",
