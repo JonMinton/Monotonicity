@@ -12,8 +12,8 @@ summarise_ipd <- function(
     for (i in 1:n_vars){
         mu.this <- round(mean(data[,i]), n_dp)
         upper.this <- mean(data[,i]) + 1.96*sd(data[,i])/sqrt(n_obs)
-        se_this <- round(
-            (upper_this - mean(data[,i]))/1.96,
+        se.this <- round(
+            (upper.this - mean(data[,i]))/1.96,
             3)
         
         list.this <- list(
@@ -31,7 +31,7 @@ bootstrap_means_ipd <- function(
     ){
     n_vars <- dim(data)[2]
     n_obs <- dim(data)[1]
-    draws <- 1:n.reps
+    draws <- 1:n_reps
     output <- matrix(NA, nrow=n_reps, ncol=n_vars)
     for (i in 1:n_reps){
         boot.this <- data[sample(1:n_obs, n_obs, T),]
@@ -81,13 +81,13 @@ make_aivm_cov_2d <- function(
     ){
     
     var_x <- sd_x^2
-    var_x <- sd_y^2
+    var_y <- sd_y^2
     
     aivm <- min(
         mean(
             c(var_x, var_y)
         ),
-        sd_y * sd_y)
+        sd_x * sd_y)
     
     sig <- matrix(data=c(var_x, aivm, aivm, var_y), nrow=2, byrow=T)
     
@@ -142,7 +142,7 @@ make_bcvr_2d <- function(
         this.cov <- lowerbound
         cat("This covariance: ", cov_this, "\n", sep="")
         testsig <- matrix(c(var_x, cov.this, cov.this, var_y), nrow=2, byrow=T)
-        testsamples <- mvrnorm(n.psa_, mu=mus, Sigma=testsig)
+        testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
     }
     
     while(search==T){
@@ -263,7 +263,7 @@ create_draws <- function(
                 violations <- draws.this < output[,i+1]
                 draws.this[violations] <- output[violations, i + 1]
             }
-            output[,i] <- this.draws
+            output[,i] <- draws.this
         }
     }
     
@@ -276,7 +276,7 @@ create_draws <- function(
                 )
             if (i ==1){
                 output[,1] <- rbeta(
-                    n.psa,
+                    n_psa,
                     params.this$a,
                     params.this$b
                     )
@@ -342,7 +342,8 @@ create_draws <- function(
             sd_x=summary_data[[1]]$se,
             mu_y=summary_data[[2]]$mu,
             sd_y=summary_data[[2]]$se,
-            colnames_=names(summary-data)
+            colnames_=names(summary_data),
+            n_psa_=n_psa
             )$aivm_samples
     }
     
@@ -489,7 +490,7 @@ make_long <- function(
         variable_labels <- colnames(psa_boot)
         if (is.null(summary_data_)){
             print("summary_data_ not found, so making summary_data from ipd")
-            summary_data_ <- summarise_ipd(
+            summary_data_ <<- summarise_ipd(
                 ipd
                 )
             
@@ -522,17 +523,23 @@ make_long <- function(
             tmp
             )
         
-        Output <- rbind(
-            Output,
+        output <- rbind(
+            output,
             tmp
             )
     }
     
-    for (i in 1:n.methods){
+    for (i in 1:n_methods){
         methods_block[[i]] <- create_draws(
-            summary_data=summmary_data_,
+            summary_data=summary_data_,
             method=i
             )
+        browser()
+        
+        
+        
+        
+        
         
         
         tmp <- reshape::melt(
@@ -542,7 +549,7 @@ make_long <- function(
         
         tmp <- data.frame(
             method=methods_labels[i],
-            sample=1:n.psa,
+            sample=1:n_psa,
             tmp
             )
                 
