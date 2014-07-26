@@ -1,11 +1,4 @@
-# # Figure Making script
 
-# 13/6/2014
-# Redoing everything in ggplot2 
-# 
-# ####################################### RESULTS ############################################
-# 
-# # want to plot scat
 
 # Toy example:
 tiff("figures/fig_01.tiff", 300,300) 
