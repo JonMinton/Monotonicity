@@ -91,12 +91,12 @@ make_aivm_cov_2d <- function(
     
     sig <- matrix(data=c(var_x, aivm, aivm, var_y), nrow=2, byrow=T)
     
-    aivm.samples <-   mvrnorm(n=n_psa_, mu=c(mu_x, mu_y), Sigma=sig )
-    colnames(aivm.samples) <- colnames_
-    aivm.samples <- as.data.frame(aivm.samples)
+    aivm_samples <-   mvrnorm(n=n_psa_, mu=c(mu_x, mu_y), Sigma=sig )
+    colnames(aivm_samples) <- colnames_
+    aivm_samples <- as.data.frame(aivm_samples)
     return(
         list(
-            aivm.samples=aivm.samples, 
+            aivm_samples=aivm_samples, 
             aivm=aivm)
         )
 }
@@ -104,7 +104,7 @@ make_aivm_cov_2d <- function(
 make_bcvr_2d <- function(
     mu_x, sd_x, 
     mu_y, sd_y, 
-    n_psa_=n_psa, 
+    n_psa_, 
     inc_by=0.00001, 
     colnames_,
     upper=T,
@@ -131,7 +131,7 @@ make_bcvr_2d <- function(
     mus <- c(mu_x, mu_y)
     search <- T
     
-    if(cov_this==upperbound){ # if the maximum value's been reached already
+    if(cov.this==upperbound){ # if the maximum value's been reached already
         
         cat("Upperbound already reached\n")
         search <- F # if the upper limit's already been reached, go no further
@@ -140,7 +140,7 @@ make_bcvr_2d <- function(
     } else {
         cat("Upperbound not yet reached\n")
         this.cov <- lowerbound
-        cat("This covariance: ", cov_this, "\n", sep="")
+        cat("This covariance: ", cov.this, "\n", sep="")
         testsig <- matrix(c(var_x, cov.this, cov.this, var_y), nrow=2, byrow=T)
         testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
     }
@@ -157,8 +157,8 @@ make_bcvr_2d <- function(
             cat("No error in mvrnorm args\n")
             testsamples <- try_testsamples # if the attempted values are correct, use them
             if (any(testsamples[,1] < testsamples[,2])){
-                cat("Violation with ", cov_this, "\n")
-                this.cov <- cov_this + inc_by # increment the values by a little bit
+                cat("Violation with ", cov.this, "\n")
+                cov.this <- cov.this + inc_by # increment the values by a little bit
                 cat("Trying ", cov.this, "\n")
             } else {
                 cat("Found ", cov.this, "\n")
@@ -357,6 +357,7 @@ create_draws <- function(
             sd_x=summary_data[[1]]$se,
             mu_y=summary_data[[2]]$mu,
             sd_y=summary_data[[2]]$se,
+            n_psa_=n_psa,
             upper=F,
             colnames_=names(summary_data)
         )$samples
@@ -371,6 +372,7 @@ create_draws <- function(
             sd_x=summary_data[[1]]$se,
             mu_y=summary_data[[2]]$mu,
             sd_y=summary_data[[2]]$se,
+            n_psa_=n_psa,
             upper=T,
             colnames_=names(summary_data)
         )$samples
@@ -513,6 +515,7 @@ make_long <- function(
         )
     
     if (exists("psa_boot")){
+        print("reshaping psa_boot to long format")
         tmp <- reshape::melt(
             data.frame(psa_boot),
             measure.vars=variable_labels
@@ -528,8 +531,9 @@ make_long <- function(
             tmp
             )
     }
-    
+    print("iterating through methods")
     for (i in 1:n_methods){
+        cat("about to create method ", i, "\n")
         methods_block[[i]] <- create_draws(
             summary_data=summary_data_,
             method=i
@@ -541,7 +545,7 @@ make_long <- function(
         
         
         
-        
+        print("reshaping")
         tmp <- reshape::melt(
             data.frame(methods_block[[i]]),
             measure.vars=variable_labels
@@ -553,13 +557,16 @@ make_long <- function(
             tmp
             )
                 
+        print("binding")
         output <- rbind(
             output, 
             tmp
         )
         
     }
+    print("draw loop finished. About to cast")
     # Code to turn into 'molten' dataframe, rather than just something with molten structure
+    
     d2 <- cast(output, method + sample ~ variable, mean)
     output <- melt(d2, id.var=c("method", "sample"))
     
