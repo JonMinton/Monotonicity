@@ -23,8 +23,8 @@ data_long <- make_long(
 
 
 data_wide <- cast(data_long, method + sample  ~ variable)
-data_wide <- mutate(data_wide, difference = u1 - u2)
-
-data_long <- melt(data_wide, id=c("method", "sample"))
+class(data_wide) <- "data.frame" # cast class attribute needs to be removed
+data_wide <- mutate(data_wide, difference=u1 - u2)
+data_long <- melt(data_wide, id.vars=c("method", "sample"))
 
 print("made long data")

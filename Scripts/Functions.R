@@ -352,31 +352,35 @@ create_draws <- function(
         
         if (n_vars!=2) stop("Only two parameters allowed with this method")
         
-        output <- make_bcvr_2d(
-            mu_x=summary_data[[1]]$mu,
-            sd_x=summary_data[[1]]$se,
-            mu_y=summary_data[[2]]$mu,
-            sd_y=summary_data[[2]]$se,
-            n_psa_=n_psa,
-            upper=F,
-            colnames_=names(summary_data)
-        )$samples
+        output <- as.data.frame(
+            make_bcvr_2d(
+                mu_x=summary_data[[1]]$mu,
+                sd_x=summary_data[[1]]$se,
+                mu_y=summary_data[[2]]$mu,
+                sd_y=summary_data[[2]]$se,
+                n_psa_=n_psa,
+                upper=F,
+                colnames_=names(summary_data)
+            )$samples
+        )
                 
     }
     
     if (method==9){
         ## Method 9 : Upper Bounded covariance retrofitting
         if (n_vars!=2) stop("Only two parameters allowed with this method")
-        output <- make_bcvr_2d(
-            mu_x=summary_data[[1]]$mu,
-            sd_x=summary_data[[1]]$se,
-            mu_y=summary_data[[2]]$mu,
-            sd_y=summary_data[[2]]$se,
-            n_psa_=n_psa,
-            upper=T,
-            colnames_=names(summary_data)
-        )$samples
         
+        output <- as.data.frame(   
+            make_bcvr_2d(
+                mu_x=summary_data[[1]]$mu,
+                sd_x=summary_data[[1]]$se,
+                mu_y=summary_data[[2]]$mu,
+                sd_y=summary_data[[2]]$se,
+                n_psa_=n_psa,
+                upper=T,
+                colnames_=names(summary_data)
+            )$samples
+        )
         
     }
     
@@ -536,33 +540,27 @@ make_long <- function(
         cat("about to create method ", i, "\n")
         methods_block[[i]] <- create_draws(
             summary_data=summary_data_,
-            method=i
+            method=i,
+            n_psa=n_psa
             )
 
-        
-        
-        
-        
-        
-        
         print("reshaping")
         tmp <- reshape::melt(
             data.frame(methods_block[[i]]),
             measure.vars=variable_labels
         )
-        
+
         tmp <- data.frame(
             method=methods_labels[i],
             sample=1:n_psa,
             tmp
             )
-                
+      
         print("binding")
         output <- rbind(
             output, 
             tmp
-        )
-        
+        ) 
     }
     print("draw loop finished. About to cast")
     # Code to turn into 'molten' dataframe, rather than just something with molten structure
