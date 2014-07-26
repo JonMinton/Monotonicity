@@ -36,17 +36,25 @@ print(g2)
 
 dev.off()
 
-## The next figure should be the IPD itself
+# The IPD itself
 
-# TO DO: FIGURE 2 to GO HERE
+tiff("figures/fig_02.tiff", 500, 500)
+g <- ggplot(data=data_2d, aes(x=u1, y=u2))
+g2 <- g + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
+g3 <- g2 + geom_point()
+g4 <- g3 + xlab("Higher parameter") + ylab("Lower parameter")
+g5 <- g4 + coord_fixed(xlim=c(0,1), ylim=c(0,1))
+print(g5)
+dev.off()
+
 
 
 #####
 
 tiff("figures/fig_03.tiff", 1100,1100) 
-g <- ggplot(data=data_wide, aes(x=u1, y=u2))
-g2 <- g + geom_point() + facet_wrap(~ method, nrow=3) 
-g3 <- g2 + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
+g <- ggplot(data=subset(data_wide, subset=sample <=2000), aes(x=u1, y=u2))
+g2 <- g + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
+g3 <- g2 + geom_point(alpha=0.1) + facet_wrap(~ method, nrow=3) 
 g4 <- g3 + coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7))
 g5 <- g4 + xlab("Higher parameter") + ylab("Lower parameter")
 g6 <- g5 + theme(text=element_text(size=16))
@@ -55,9 +63,9 @@ dev.off()
 
 
 tiff("figures/fig_04.tiff", 1200, 800)
-g <- ggplot(subset(data_wide, method!="Bootstrapped"), aes(x=u1)) + geom_density(fill="grey")
+g <- ggplot(subset(data_wide, subset=method!="Bootstrapped"), aes(x=u1)) + geom_density(fill="grey")
 g2 <- g + facet_wrap("method", nrow=4)
-g3 <- g2 + geom_density(aes(x=subset(data_wide, method=="Bootstrapped")$u1), col="blue", width=1.1, lty="dashed")
+g3 <- g2 + geom_density(aes(x=subset(data_wide, subset=method=="Bootstrapped")$u1), col="blue", width=1.1, lty="dashed")
 g4 <- g3 + xlab("Distribution of estimates for higher parameter")
 print(g4)
 dev.off()
