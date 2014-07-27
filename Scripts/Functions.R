@@ -208,15 +208,14 @@ create_draws <- function(
     
     if (method==2){
         ## Method 2 : Quantile matching/same random number seed        
-
+        seeds <- runif(n_psa)
         for (i in 1:n_vars){
             params.this <- est_beta(
                 summary_data[[i]]$mu,
                 summary_data[[i]]$se^2
-            )
-            set.seed(seed)
-            draws.this <- rbeta(
-                n_psa,
+            )            
+            draws.this <- qbeta(
+                seeds,
                 params.this$a,
                 params.this$b
             )
@@ -462,7 +461,7 @@ create_draws <- function(
 
 # Function for producing Long Data with all methods, given only the Summary data and IPD
 
-make_long <- function(
+make_block <- function(
     ipd=NULL,
     summary_data_=NULL,
     n_psa=1000,
@@ -512,63 +511,25 @@ make_long <- function(
     
     names(methods_block) <- methods_labels
     
-    output <- data.frame(
-        method=c(),
-        variable=c(),
-        value=c()
-        )
-    
-    if (exists("psa_boot")){
-        print("reshaping psa_boot to long format")
-        tmp <- reshape::melt(
-            data.frame(psa_boot),
-            measure.vars=variable_labels
-            )
-        tmp <- data.frame(
-            method="Bootstrapped",
-            sample=1:n_psa,
-            tmp
-            )
-        
-        output <- rbind(
-            output,
-            tmp
-            )
-    }
+
     print("iterating through methods")
     for (i in 1:n_methods){
         cat("about to create method ", i, "\n")
-        methods_block[[i]] <- create_draws(
+        methods_block[[i]] <- as.data.frame(
+            create_draws(
             summary_data=summary_data_,
             method=i,
             n_psa=n_psa
             )
-
-        print("reshaping")
-        tmp <- reshape::melt(
-            data.frame(methods_block[[i]]),
-            measure.vars=variable_labels
         )
 
-        tmp <- data.frame(
-            method=methods_labels[i],
-            sample=1:n_psa,
-            tmp
-            )
-      
-        print("binding")
-        output <- rbind(
-            output, 
-            tmp
-        ) 
     }
-    print("draw loop finished. About to cast")
-    # Code to turn into 'molten' dataframe, rather than just something with molten structure
-    
-    d2 <- cast(output, method + sample ~ variable, mean)
-    output <- melt(d2, id.var=c("method", "sample"))
-    
-    return(output)
+
+    # add bootstrapped onto end of methodsblock
+    methods_block[[length(methods_block) + 1]] <- psa_boot
+    names(methods_block)[length(methods_block)] <- "Bootstrapped"
+
+    return(methods_block)
     
 }
 

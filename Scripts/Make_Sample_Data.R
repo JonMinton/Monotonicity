@@ -2,7 +2,7 @@ data_summaries <- summarise_ipd(
     data_2d
     )
 
-data_long <- make_long(
+data_block <- make_block(
     ipd=data_2d,
     summary_data=data_summaries,
     n_psa=N_PSA,
@@ -21,10 +21,12 @@ data_long <- make_long(
     )
 )
 
+data_wide <- ldply(data_block)
+data_wide$sample <- 1:N_PSA
+data_wide <- rename(data_wide, c(".id"="method"))
+data_wide <- mutate(data_wide, difference=u1-u2)
+data_wide <- data_wide[c("method", "sample", "u1", "u2", "difference")]
 
-data_wide <- cast(data_long, method + sample  ~ variable)
-class(data_wide) <- "data.frame" # cast class attribute needs to be removed
-data_wide <- mutate(data_wide, difference=u1 - u2)
-data_long <- melt(data_wide, id.vars=c("method", "sample"))
+data_long <- melt(data_wide, id.var=c("method", "sample"))
 
-print("made long data")
+print("finished making wide and long data")

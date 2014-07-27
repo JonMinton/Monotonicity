@@ -2,8 +2,7 @@
 # 29/5/2014
 
 ##### TO DO
-# 1) Change quantile approach to avoid problem previously accounted (two phases: lines and scatter)
-# 2) Look again at calculation of covariance approaches
+# 1) Look again at calculation of covariance approaches
 
 
 
