@@ -169,9 +169,21 @@ make_bcvr_2d <- function(
             }
         }
     }
-    if (THROW_FACTS) { sponge$cov_found <<- cov.this }
+    if (THROW_FACTS) { 
+        if (exists("sponge$cov_found")){
+            sponge$cov_found <<- c(sponge$cov_found, cov.this)
+        } else {
+            sponge$cov_found <<- cov.this
+        }
+    }
     cor.this <- cov.this / (sd_x * sd_y)
-    if (THROW_FACTS) {spong$cor_found << cor.this}
+    if (THROW_FACTS) {
+        if (exists("sponge$cor_found")){
+            sponge$cor_found <<- c(sponge$cor_found, cor.this)
+        } else {
+            sponge$cor_found <<- cor.this
+        }
+    }
     colnames(testsamples)=colnames_
     return(
         list(cov=cov.this, 
@@ -185,7 +197,6 @@ create_draws <- function(
     summary_data,
     method,
     n_psa=1000,
-    ###
     seed=80,
     ...
     ){
