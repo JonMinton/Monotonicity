@@ -89,6 +89,8 @@ make_aivm_cov_2d <- function(
         ),
         sd_x * sd_y)
     
+    if (THROW_FACTS) {sponge$aivm <<- aivm}
+    
     sig <- matrix(data=c(var_x, aivm, aivm, var_y), nrow=2, byrow=T)
     
     aivm_samples <-   mvrnorm(n=n_psa_, mu=c(mu_x, mu_y), Sigma=sig )
@@ -131,10 +133,11 @@ make_bcvr_2d <- function(
     mus <- c(mu_x, mu_y)
     search <- T
     
-    if(cov.this==upperbound){ # if the maximum value's been reached already
+    if(cov.this == upperbound){ # if the maximum value's been reached already
         
         cat("Upperbound already reached\n")
         search <- F # if the upper limit's already been reached, go no further
+        if (THROW_FACTS){sponge$upperbound_reached <<- T}
         testsig <- matrix(c(var_x, cov.this, cov.this, var_y), nrow=2, byrow=T)
         testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
     } else {
@@ -166,7 +169,9 @@ make_bcvr_2d <- function(
             }
         }
     }
+    if (THROW_FACTS) { sponge$cov_found <<- cov.this }
     cor.this <- cov.this / (sd_x * sd_y)
+    if (THROW_FACTS) {spong$cor_found << cor.this}
     colnames(testsamples)=colnames_
     return(
         list(cov=cov.this, 
