@@ -112,28 +112,46 @@ make_bcvr_2d <- function(
     upper=T,
     quietly=T
     ){    
+    if (!quietly){
+        print("make_bcvr_2d entered")
+        cat("upper is set to ", upper, "\n")
+    }
+    
     var_x <- sd_x^2 # variance of X
     var_y <- sd_y^2 # variance of Y
+    
+    if (!quietly){
+        cat("var_x is ", var_x, " and var_y is ", var_y, "\n")
+    }
+    
     if(upper==T){
         lowerbound <- 0 # start assuming independent
         upperbound <- min(sd_x * sd_y,
                           mean(var_y, var_y)
         ) # upper bounds are the minimum of the AIVM or the cov which implies a cor > 1
+        
+        if (!quietly){
+            cat("upper bounded. Looking for values between ", lowerbound, " and ", upperbound, "\n")
+            browser()
+        }
+        
     } else {
         lowerbound <- mean(var_x, var_y)
         upperbound <- sd_x * sd_y # don't select a covariance which implies a correlation > 1
+        
+        if (!quietly){
+            cat("lower bounded. Looking for values between ", lowerbound, "and ", upperbound, "\n")
+            browser()
+        }
     }
     
       
     cov.this <- lowerbound
-    if (!quietly){
-        cat(var_x, var_y, lowerbound, upperbound, cov.this, "\n")
-    }
-    
+
     mus <- c(mu_x, mu_y)
     search <- T
     
-    if(cov.this == upperbound){ # if the maximum value's been reached already
+    if(cov.this <= upperbound){ # if the maximum value's been reached already
         
         cat("Upperbound already reached\n")
         search <- F # if the upper limit's already been reached, go no further
@@ -198,7 +216,7 @@ create_draws <- function(
     method,
     n_psa=1000,
     seed=80,
-    ...
+    quietly=F
     ){
     # summary_data should be a list
     # The top level should be the number of variables to estimate
@@ -375,7 +393,8 @@ create_draws <- function(
                 sd_y=summary_data[[2]]$se,
                 n_psa_=n_psa,
                 upper=F,
-                colnames_=names(summary_data)
+                colnames_=names(summary_data),
+                quietly=quietly
             )$samples
         )
                 
@@ -393,7 +412,8 @@ create_draws <- function(
                 sd_y=summary_data[[2]]$se,
                 n_psa_=n_psa,
                 upper=T,
-                colnames_=names(summary_data)
+                colnames_=names(summary_data),
+                quietly=quietly
             )$samples
         )
         
@@ -495,7 +515,7 @@ make_block <- function(
         "Difference\n(Upwards)", 
         "Difference\n(Downwards)"
         ),
-    ...
+    quietly=F
     ){
     # Cases:
     # 1) IPD but no Sum
@@ -535,7 +555,8 @@ make_block <- function(
             create_draws(
             summary_data=summary_data_,
             method=i,
-            n_psa=n_psa
+            n_psa=n_psa,
+            quietly=quietly
             )
         )
 

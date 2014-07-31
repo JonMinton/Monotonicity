@@ -97,7 +97,7 @@ dev.off()
 
 
 tiff("figures/fig_07.tiff", 1200, 800)
-levels(Summaries.RMS$var) <- c("Difference", "Higher", "Lower")
+levels(summaries_rms$var) <- c("Difference", "Higher", "Lower")
 
 g1 <- ggplot(data=Summaries.RMS) + aes(y=method, x=value) + geom_point(size=3) 
 g2 <- g1 + facet_wrap(  ~ var) + labs (x="Root mean squared error", y="Method")

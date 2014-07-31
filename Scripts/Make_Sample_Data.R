@@ -6,7 +6,7 @@ data_block <- make_block(
     ipd=data_2d,
     summary_data=data_summaries,
     n_psa=N_PSA,
-    methods.labels=c(
+    methods_labels=c(
         "Independent",
         "Quantile Matching",
         "Replication\n(Upwards)",
@@ -18,7 +18,8 @@ data_block <- make_block(
         "Covariance Fitting\n(Upper Bounded)",
         "Difference\n(Upwards)", 
         "Difference\n(Downwards)"
-    )
+    ),
+    quietly=F
 )
 
 data_wide <- ldply(data_block)
