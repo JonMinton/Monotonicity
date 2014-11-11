@@ -352,7 +352,7 @@ create_draws <- function(
                                           params.this$a,
                                           params.this$b
                                           )
-                        if (val.this > output[j,i-1]){
+                        if (val.this >= output[j,i-1]){
                             output[j, i] <- val.this
                             continue <- T
                         }
@@ -385,7 +385,7 @@ create_draws <- function(
                                           params.this$a,
                                           params.this$b
                         )
-                        if (val.this < output[j,i+1]){
+                        if (val.this <= output[j,i+1]){
                             output[j, i] <- val.this
                             continue <- T
                         }
