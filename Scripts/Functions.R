@@ -91,9 +91,20 @@ make_aivm_cov_2d <- function(
     
     if (THROW_FACTS) {sponge$aivm <<- aivm}
     
-    sig <- matrix(data=c(var_x, aivm, aivm, var_y), nrow=2, byrow=T)
+    sig <- matrix(
+        data=c(
+            var_x, aivm, 
+            aivm, var_y
+            ), 
+        nrow=2, byrow=T
+        )
     
-    aivm_samples <-   mvrnorm(n=n_psa_, mu=c(mu_x, mu_y), Sigma=sig )
+    aivm_samples <-   mvrnorm(
+        n=n_psa_, 
+        mu=c(mu_x, mu_y), 
+        Sigma=sig 
+        )
+    
     colnames(aivm_samples) <- colnames_
     aivm_samples <- as.data.frame(aivm_samples)
     return(
@@ -156,19 +167,38 @@ make_bcvr_2d <- function(
         cat("Upperbound already reached\n")
         search <- F # if the upper limit's already been reached, go no further
         if (THROW_FACTS){sponge$upperbound_reached <<- T}
-        testsig <- matrix(c(var_x, cov.this, cov.this, var_y), nrow=2, byrow=T)
+        
+        testsig <- matrix(
+            c(
+                var_x, cov.this, 
+                cov.this, var_y
+                ), nrow=2, byrow=T
+            )
+        
         testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
     } else {
         cat("Upperbound not yet reached\n")
         this.cov <- lowerbound
         cat("This covariance: ", cov.this, "\n", sep="")
-        testsig <- matrix(c(var_x, cov.this, cov.this, var_y), nrow=2, byrow=T)
+        testsig <- matrix(
+            c(
+                var_x, cov.this, 
+                cov.this, var_y
+            ), nrow=2, byrow=T
+        )
+        
         testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
     }
     
     while(search==T){
         cat("trying ", cov.this, "\n")
-        testsig <- matrix(c(var_x, cov.this, cov.this, var_y), nrow=2, byrow=T)
+        testsig <- matrix(
+            c(
+                var_x, cov.this, 
+                cov.this, var_y
+                ), nrow=2, byrow=T
+            )
+        
         try_testsamples <- try(mvrnorm(n_psa_, mu=mus, Sigma=testsig))
         if(class(try_testsamples)=="try-error"){ # if mvrnorm has been passed impossible values
             search <- F
@@ -322,7 +352,7 @@ create_draws <- function(
                                           params.this$a,
                                           params.this$b
                                           )
-                        if (val.this < output[j,i-1]){
+                        if (val.this > output[j,i-1]){
                             output[j, i] <- val.this
                             continue <- T
                         }
@@ -355,7 +385,7 @@ create_draws <- function(
                                           params.this$a,
                                           params.this$b
                         )
-                        if (val.this > output[j,i+1]){
+                        if (val.this < output[j,i+1]){
                             output[j, i] <- val.this
                             continue <- T
                         }
