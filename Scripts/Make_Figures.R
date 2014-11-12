@@ -45,8 +45,17 @@ dev.off()
 #####
 
 tiff("figures/fig_03.tiff", 1100,1100) 
-g <- ggplot(data=subset(data_wide, subset=sample <=2000), aes(x=u1, y=u2))
+
+samples <- sample(
+    unique(data_wide$sample),
+    min(2000, length(unique(data_wide$sample)))
+)
+
+d_wide_ss <- subset(data_wide, subset=sample %in% samples)
+g <- ggplot(data=d_wide_ss, aes(x=u1, y=u2))
 g2 <- g + geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1)
+
+
 g3 <- g2 + geom_point(alpha=0.1) + facet_wrap(~ method, nrow=3) 
 g4 <- g3 + coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7))
 g5 <- g4 + xlab("Higher parameter") + ylab("Lower parameter")
@@ -94,13 +103,24 @@ dev.off()
 
 
 
+# Want values reordered by mean rms error
+levels(summaries_rms$variable) <- c("Higher", "Lower", "Difference")
 
+mean_rms <- ddply(summaries_rms,
+                  .(method),
+                  summarise,
+                  mean_rms=mean(rms),
+                  dif_rms=rms[variable=="Difference"]
+                  )
+summaries_rms <- join(summaries_rms, mean_rms)
+
+summaries_rms$method <- factor(summaries_rms$method,
+                               levels=summaries_rms[order(summaries_rms$mean_rms),"method"])
 
 tiff("figures/fig_07.tiff", 1200, 800)
-levels(summaries_rms$var) <- c("Difference", "Higher", "Lower")
 
-g1 <- ggplot(data=Summaries.RMS) + aes(y=method, x=value) + geom_point(size=3) 
-g2 <- g1 + facet_wrap(  ~ var) + labs (x="Root mean squared error", y="Method")
+g1 <- ggplot(data=summaries_rms) + aes(x=rms, y=method) + geom_point(size=3) 
+g2 <- g1 + facet_wrap(  ~ variable) + labs (x="Root mean squared error", y="Method")
 print(g2)
 
 dev.off()
