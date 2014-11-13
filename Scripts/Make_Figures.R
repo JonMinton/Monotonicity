@@ -48,7 +48,7 @@ tiff("figures/fig_03.tiff", 1100,1100)
 
 samples <- sample(
     unique(data_wide$sample),
-    min(2000, length(unique(data_wide$sample)))
+    min(2500, length(unique(data_wide$sample)))
 )
 
 d_wide_ss <- subset(data_wide, subset=sample %in% samples)
