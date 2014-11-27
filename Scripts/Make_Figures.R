@@ -7,7 +7,7 @@ toy_data <- data.frame(
     good=rnorm(10000, 0.6, 0.4)
     )
 
-g <- ggplot(toy_data) + geom_density(aes(x=bad), fill="red", alpha=0.2) + geom_density(aes(x=good), fill="blue", alpha=0.2)
+g <- ggplot(toy_data) + geom_density(aes(x=bad), fill="red", alpha=0.6) + geom_density(aes(x=good), fill="blue", alpha=0.2)
 
 
 theme_myblank <- theme(axis.line=element_blank(),
