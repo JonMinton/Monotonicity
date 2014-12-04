@@ -1,0 +1,125 @@
+---
+title: "Difference method applied to summary statistics with unequal sample sizes"
+author: "Jon Minton"
+date: "Thursday, December 04, 2014"
+output: word_document
+---
+#Introduction
+This appendix illustrates how the difference method can be applied in a typical case where the estimates from the lower
+and the higher states have different sample sizes. For example, imagine the information available was as follows:
+
+|Parameter  | Mean | Standard Deviation | Sample Size |
+| ----------|------| --------------------| ------------|
+| Lower     | 0.35 | 0.20                | 40          |
+| Higher    | 0.40 | 0.15                | 10          | 
+
+We can see through some simple calculations and statistical simulation that some proportion of the paired estimates will violate
+the monotonicity assumption. 
+
+```{r, echo=TRUE, eval=TRUE}
+# Upper end of the lower distribution
+0.35 + 2 * 0.2/(40^0.5)
+# So, higher than the centre of the Higher distribution
+# Lower end of the higher distribution
+0.40 - 2 * 0.15/(10^0.5)
+sims_lower <- rnorm(1000, 0.35, 0.2/(40^0.5))
+sims_upper <- rnorm(1000, 0.40, 0.15/(10^0.5))
+plot(density(sims_upper))
+lines(density(sims_lower), lty="dashed")
+diffs <- sims_upper - sims_lower
+plot(density(diffs))
+abline(v=0)
+# This shows that some of the density of differences is on the wrong side of the zero line. 
+# Let's quantify this:
+length(which(diffs<0))/1000
+```
+#Estimation using Difference method
+
+```{r, echo=T, eval=T}
+library(ggplot2)
+# Specify data
+lower_mean = 0.35
+lower_var = (0.20/(40^0.5))^2
+
+higher_mean = 0.40
+higher_var = (0.15/(10^0.5))^2
+
+n_psa=1000
+
+# Load functions
+est_beta <- function(mu, var) {
+    a <- mu * ((1 - mu) * (mu / var) - 1)
+    b <- a * ((1 - mu) / mu)
+    return(list(a=a, b=b))
+}
+
+get_dif_param <- function(
+    u1_mu, u1_sd, 
+    u2_mu, u2_sd, 
+    quietly=T
+    ){
+    mu <- u1_mu - u2_mu
+    
+    sigma2 <- ifelse(u1_sd > u2_sd, u1_sd^2 - u2_sd^2, u2_sd^2 - u1_sd^2)
+    x <- (1 - mu) / mu
+    
+    a <- (x/sigma2-1-2*x-x^2)/(1+3*x+3*x^2+x^3)
+    b<-a*x
+    
+    if(quietly==F){
+        print(a/(a+b))  # check mean of delta
+        print(a*b/(a+b)^2/(a+b+1))  # check variance of delta    
+    }
+    return(list(a=a, b=b))
+}
+
+# If upper is simulated as lower + difference
+beta_lower <- est_beta(
+    mu=lower_mean,
+    var=lower_var
+    )
+
+beta_dif <-get_dif_param(
+    u1_mu=higher_mean,
+    u1_sd=higher_var^0.5,
+    u2_mu=lower_mean,
+    u2_sd=lower_var^0.5
+    )
+
+sims_lower <- rbeta(n_psa, beta_lower$a, beta_lower$b)
+sims_dif <- rbeta(n_psa, beta_dif$a, beta_dif$b)
+outputs <- data.frame(
+    lower=sims_lower,
+    higher=sims_lower + sims_dif
+    )    
+
+qplot(data=outputs, y=lower, x=higher) + geom_abline(slope=1, intercept=0, colour="red") + xlim(c(0,1)) + ylim(c(0,1))
+
+# If lower is simulated as upper - difference
+
+beta_higher <- est_beta(
+    mu=higher_mean,
+    var=higher_var
+    )
+
+beta_dif <-get_dif_param(
+    u1_mu=higher_mean,
+    u1_sd=higher_var^0.5,
+    u2_mu=lower_mean,
+    u2_sd=lower_var^0.5
+    )
+
+sims_higher <- rbeta(n_psa, beta_higher$a, beta_higher$b)
+sims_dif <- rbeta(n_psa, beta_dif$a, beta_dif$b)
+outputs <- data.frame(
+    lower=sims_higher - sims_dif,
+    higher=sims_higher
+    )    
+
+qplot(data=outputs, y=lower, x=higher) + geom_abline(slope=1, intercept=0, colour="red") + xlim(c(0,1)) + ylim(c(0,1))
+
+```
+
+# Discussion
+It is apparent from the scatterplots above that the Difference method does not produce estimates which are on the wrong side of the parity. However, it is also apparent from these images that, in the cases above, the choice of the reference distribution (lower in the first example, and higher in the second example) affects the pattern of scatter. In the absence of additional information is appears neither pattern of scatter is more plausible than the other, but further investigation may be warrented. 
+

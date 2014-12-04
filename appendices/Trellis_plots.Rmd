@@ -1,0 +1,12 @@
+---
+title: "Trellis_plots"
+author: "Jon_Minton"
+date: "Thursday, December 04, 2014"
+output: word_document
+---
+#Introduction
+This document shows Trellis plots of the densities of estimates for the means of the higher and lower parameters individually, rather than the density of paired differences shown in figure 4 of the main manuscript. 
+
+## Lower parameter
+
+![lower](/Figures/fig_05.tiff "lower")

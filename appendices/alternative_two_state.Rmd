@@ -1,0 +1,36 @@
+---
+title: "Alternative two state "
+author: "Jon_Minton"
+date: "Thursday, December 04, 2014"
+output: word_document
+---
+#Introduction
+- Alternative two state dataset
+- Three state dataset
+- Summary estimates based on unequal sample sizes. 
+
+# Alternative two state dataset
+
+```{r, eval=T, echo=TRUE, cache=TRUE}
+setwd("E:/repos/Monotonicity/")
+# A different dataset
+data_2d <- data.frame(
+    u1=c(
+        0.492, 0.402, 0.602, 0.302, 0.610,
+        0.902, 0.502, 0.207, 0.358, 0.302,
+        0.962, 0.101, 0.702, 0.775, 0.702,
+        0.502, 0.628, 0.884, 0.502, 0.802
+    ),
+    u2=c(
+        0.490, 0.387, 0.507, 0.230, 0.602, 
+        0.852, 0.334, 0.105, 0.226, 0.250,
+        0.815, 0.042, 0.667, 0.668, 0.668,
+        0.308, 0.602, 0.881, 0.500, 0.725
+    )
+)
+library(knitr)
+kable(data_2d)
+```
+#Figures
+
+The figures generated using this alternative dataset are presented below.

@@ -1,0 +1,604 @@
+---
+title: "R code describing methods compared"
+author: "Dr Jon Minton"
+date: "Thursday, December 04, 2014"
+output: word_document
+---
+#Introduction
+
+This appendix describes the R code used to generate the various models compared in our paper. 
+
+#Helper and support functions
+
+This section presents code that performs ancillary (helper) functions for the generation of the methods below.
+
+##Summarise IPD
+
+This code takes a dataframe of IPD and creates summary statistics based on it: the mean and the standard error, based on the standard deviation and the sample size. This is the only information 
+available to all of the method except the bootstrapped IPD-based gold standard. 
+
+```{r, eval=FALSE}
+summarise_ipd <- function(
+    data,
+    n_dp=3
+    ){
+    n_vars <- dim(data)[2]
+    n_obs <- dim(data)[1]
+    output <- vector("list", length=n_vars)
+    names(output) <- colnames(data)
+    
+    for (i in 1:n_vars){
+        mu.this <- round(mean(data[,i]), n_dp)
+        upper.this <- mean(data[,i]) + 1.96*sd(data[,i])/sqrt(n_obs)
+        se.this <- round(
+            (upper.this - mean(data[,i]))/1.96,
+            3)
+        
+        list.this <- list(
+            mu=mu.this,
+            se=se.this
+            )
+        output[[i]] <- list.this
+    }
+    return(output)    
+}
+```
+##Bootstrapped IPD
+This function takes IPD and estimates the joint means of the data through a bootstrapping procedure. This is considered the 
+'gold standard' within the evalution, against which the other methods are compared. 
+
+```{r, eval=F}
+bootstrap_means_ipd <- function(
+    data,
+    n_reps
+    ){
+    n_vars <- dim(data)[2]
+    n_obs <- dim(data)[1]
+    draws <- 1:n_reps
+    output <- matrix(NA, nrow=n_reps, ncol=n_vars)
+    for (i in 1:n_reps){
+        boot.this <- data[sample(1:n_obs, n_obs, T),]
+        for (j in 1:n_vars){
+            output[i,j] <- mean(boot.this[,j])
+        }
+    }
+    colnames(output) <- colnames(data)
+    output <- as.data.frame(output)
+    return(output)
+}
+```
+##Beta parameters from reported mean and variance
+This function returns the beta parameters associated with a given mean and variance
+```{r, eval=F}
+est_beta <- function(mu, var) {
+    a <- mu * ((1 - mu) * (mu / var) - 1)
+    b <- a * ((1 - mu) / mu)
+    return(list(a=a, b=b))
+}
+```
+
+##Difference parameter beta calculation
+This function identifies the beta distribution parameters for the delta distribution used in the difference method
+
+```{r, eval=FALSE}
+get_dif_param <- function(
+    u1_mu, u1_sd, 
+    u2_mu, u2_sd, 
+    quietly=T
+    ){
+    mu <- u1_mu - u2_mu
+    
+    sigma2 <- ifelse(u1_sd > u2_sd, u1_sd^2 - u2_sd^2, u2_sd^2 - u1_sd^2)
+    x <- (1 - mu) / mu
+    
+    a <- (x/sigma2-1-2*x-x^2)/(1+3*x+3*x^2+x^3)
+    b<-a*x
+    
+    if(quietly==F){
+        print(a/(a+b))  # check mean of delta
+        print(a*b/(a+b)^2/(a+b+1))  # check variance of delta    
+    }
+    return(list(a=a, b=b))
+}
+```
+##Average of the individual variances (AIVM) method
+This method takes as its inputs the mean and SDs of two distributions and returns joint PSA estimates drawn from a bivariate 
+normal distribution that has a covariance equal to the average of the variances of the two input distributions
+
+
+```{r, eval=FALSE}
+make_aivm_cov_2d <- function(
+    mu_x, sd_x, 
+    mu_y, sd_y, 
+    colnames_,
+    n_psa_=n_psa
+    ){
+    
+    var_x <- sd_x^2
+    var_y <- sd_y^2
+    
+    aivm <- min(
+        mean(
+            c(var_x, var_y)
+        ),
+        sd_x * sd_y)
+    
+    if (THROW_FACTS) {sponge$aivm <<- aivm}
+    
+    sig <- matrix(
+        data=c(
+            var_x, aivm, 
+            aivm, var_y
+            ), 
+        nrow=2, byrow=T
+        )
+    
+    aivm_samples <-   mvrnorm(
+        n=n_psa_, 
+        mu=c(mu_x, mu_y), 
+        Sigma=sig 
+        )
+    
+    colnames(aivm_samples) <- colnames_
+    aivm_samples <- as.data.frame(aivm_samples)
+    return(
+        list(
+            aivm_samples=aivm_samples, 
+            aivm=aivm)
+        )
+}
+```
+## Covariance fitting methods
+
+This function is used for both the methods 'Covariance Fitting (Lower Bounded)' and 'Covariance Fitting (Upper bounded)'. The 
+input argument 'upper' is used to determin which of the two methods will be run. If the option `quietly` is set to FALSE then 
+it also reports details of the covariances that it tries against the criterion. The criterion is that no pair of estimates should
+violate the monotonicity assumption. Depending on the value of a global variable `THROW_FACTS` further details are written to a 
+list object called `sponge`. The `inc_by` option can also be adjusted to provide a finer or coarser grained searching of the search
+space.
+
+
+```{r, eval=FALSE}
+make_bcvr_2d <- function(
+    mu_x, sd_x, 
+    mu_y, sd_y, 
+    n_psa_, 
+    inc_by=0.00001, 
+    colnames_,
+    upper=T,
+    quietly=T
+    ){    
+    if (!quietly){
+        print("make_bcvr_2d entered")
+        cat("upper is set to ", upper, "\n")
+    }
+    
+    var_x <- sd_x^2 # variance of X
+    var_y <- sd_y^2 # variance of Y
+    
+    if (!quietly){
+        cat("var_x is ", var_x, " and var_y is ", var_y, "\n")
+    }
+    
+    if(upper==T){
+        lowerbound <- 0 # start assuming independent
+        upperbound <- min(sd_x * sd_y,
+                          mean(var_y, var_y)
+        ) # upper bounds are the minimum of the AIVM or the cov which implies a cor > 1
+        
+        if (!quietly){
+            cat("upper bounded. Looking for values between ", lowerbound, " and ", upperbound, "\n")
+            browser()
+        }
+        
+    } else {
+        lowerbound <- mean(var_x, var_y)
+        upperbound <- sd_x * sd_y # don't select a covariance which implies a correlation > 1
+        
+        if (!quietly){
+            cat("lower bounded. Looking for values between ", lowerbound, "and ", upperbound, "\n")
+            browser()
+        }
+    }
+    
+      
+    cov.this <- lowerbound
+
+    mus <- c(mu_x, mu_y)
+    search <- T
+    
+    if(cov.this <= upperbound){ # if the maximum value's been reached already
+        
+        cat("Upperbound already reached\n")
+        search <- F # if the upper limit's already been reached, go no further
+        if (THROW_FACTS){sponge$upperbound_reached <<- T}
+        
+        testsig <- matrix(
+            c(
+                var_x, cov.this, 
+                cov.this, var_y
+                ), nrow=2, byrow=T
+            )
+        
+        testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
+    } else {
+        cat("Upperbound not yet reached\n")
+        this.cov <- lowerbound
+        cat("This covariance: ", cov.this, "\n", sep="")
+        testsig <- matrix(
+            c(
+                var_x, cov.this, 
+                cov.this, var_y
+            ), nrow=2, byrow=T
+        )
+        
+        testsamples <- mvrnorm(n_psa_, mu=mus, Sigma=testsig)
+    }
+    
+    while(search==T){
+        cat("trying ", cov.this, "\n")
+        testsig <- matrix(
+            c(
+                var_x, cov.this, 
+                cov.this, var_y
+                ), nrow=2, byrow=T
+            )
+        
+        try_testsamples <- try(mvrnorm(n_psa_, mu=mus, Sigma=testsig))
+        if(class(try_testsamples)=="try-error"){ # if mvrnorm has been passed impossible values
+            search <- F
+            cat("Error picked up\n")
+            
+        } else {
+            cat("No error in mvrnorm args\n")
+            testsamples <- try_testsamples # if the attempted values are correct, use them
+            if (any(testsamples[,1] < testsamples[,2])){
+                cat("Violation with ", cov.this, "\n")
+                cov.this <- cov.this + inc_by # increment the values by a little bit
+                cat("Trying ", cov.this, "\n")
+            } else {
+                cat("Found ", cov.this, "\n")
+                search <- F
+            }
+        }
+    }
+    if (THROW_FACTS) { 
+        if (exists("sponge$cov_found")){
+            sponge$cov_found <<- c(sponge$cov_found, cov.this)
+        } else {
+            sponge$cov_found <<- cov.this
+        }
+    }
+    cor.this <- cov.this / (sd_x * sd_y)
+    if (THROW_FACTS) {
+        if (exists("sponge$cor_found")){
+            sponge$cor_found <<- c(sponge$cor_found, cor.this)
+        } else {
+            sponge$cor_found <<- cor.this
+        }
+    }
+    colnames(testsamples)=colnames_
+    return(
+        list(cov=cov.this, 
+             samples=testsamples, 
+             cor=cor.this)
+        )
+}
+```
+
+
+#The models 
+This section shows the code used to generate the models that are being compared in the paper. 
+
+## Coordinating function
+Each of the methods is run through a coordinating function, `create_draws`, which takes as its input a list object, 
+`summary_data`, and `method`, a number referring to the method to be run. It then returns as an output a list of dataframes, each dataframe containing the joint draws generated by the specified method.
+
+The structure of this coordinating function is shown below. The contents of each of the method subsections is presented separately later in the document
+```{r, eval=F}
+
+create_draws <- function(
+    summary_data,
+    method,
+    n_psa=1000,
+    seed=80,
+    quietly=F
+    ){
+    # summary_data should be a list
+    # The top level should be the number of variables to estimate
+    n_vars <- length(summary_data)
+    output <- matrix(NA, nrow=n_psa, ncol=n_vars)
+    colnames(output) <- names(summary_data)
+    
+    if (method==1){## See method 1 code
+    }
+    if (method==2){## see method 2 code
+    }
+    if (method==3){## See method 3 code
+    }
+    if (method==4){## See method 4 code
+    }    
+    if (method==5){## See method 5 code
+    }
+    if (method==6){## See method 6 code
+    }
+    if (method==7){## See method 7 code
+    }
+    if (method==8){## See method 8 code           
+    }
+    if (method==9){## See method 9 code
+    }
+    if (method==10){## See method 10 code           
+    }
+    if (method == 11){## See method 11 code
+    }
+
+    ###
+    return(output)
+}
+```
+
+## Code within the coordinating function
+
+###Method 1: independent sampling
+```{r, eval=F}
+## Method 1 : Independent Sampling (Naive)
+for (i in 1:n_vars){
+    params.this <- est_beta(
+        summary_data[[i]]$mu,
+        summary_data[[i]]$se^2
+        )
+    draws.this <- rbeta(
+        n_psa,
+        params.this$a,
+        params.this$b
+        )
+    output[,i] <- draws.this
+}
+```
+
+###Method 2: quantile matching
+```{r, eval=FALSE}
+## Method 2 : Quantile matching/same random number seed        
+seeds <- runif(n_psa)
+for (i in 1:n_vars){
+    params.this <- est_beta(
+        summary_data[[i]]$mu,
+        summary_data[[i]]$se^2
+    )            
+    draws.this <- qbeta(
+        seeds,
+        params.this$a,
+        params.this$b
+    )
+    output[,i] <- draws.this
+}
+```
+###Method 3: upward replacement
+```{r, eval=FALSE}
+## Method 3 : Upward Replacement
+for (i in 1:n_vars){
+    params.this <- est_beta(
+        summary_data[[i]]$mu,
+        summary_data[[i]]$se^2
+    )
+    draws.this <- rbeta(
+        n_psa,
+        params.this$a,
+        params.this$b
+    )
+    
+    if (i > 1){
+        violations <- draws.this > output[,i-1]
+        draws.this[violations] <- output[violations,i-1]
+    }
+    output[,i] <- draws.this
+}
+```
+###Method 4, downward replacement
+```{r, eval=FALSE}
+## Method 4 : Downward Replacement
+for (i in n_vars:1){
+    params.this <- est_beta(
+        summary_data[[i]]$mu,
+        summary_data[[i]]$se^2
+        )
+    draws.this <- rbeta(
+        n_psa,
+        params.this$a, 
+        params.this$b
+        )
+    if (i < n_vars){
+        violations <- draws.this < output[,i+1]
+        draws.this[violations] <- output[violations, i + 1]
+    }
+    output[,i] <- draws.this
+}
+```
+###Method 5, upward resampling
+```{r, eval=FALSE}
+## Method 5 : Upward Resampling
+for (i in 1:n_vars){
+    params.this <- est_beta(
+        summary_data[[i]]$mu, 
+        summary_data[[i]]$se^2
+        )
+    if (i ==1){
+        output[,1] <- rbeta(
+            n_psa,
+            params.this$a,
+            params.this$b
+            )
+        
+    } else {
+        for (j in 1:n_psa){
+            continue <- F
+            while(continue==F){
+                val.this <- rbeta(1, 
+                                  params.this$a,
+                                  params.this$b
+                                  )
+                if (val.this <= output[j,i-1]){
+                    output[j, i] <- val.this
+                    continue <- T
+                }
+            }
+        }
+    }
+}
+```
+###Method 6, upwards resampling
+```{r, eval=FALSE}
+## Method 6 : Upward Resampling
+
+for (i in n_vars:1){
+    params.this <- est_beta(
+        summary_data[[i]]$mu, 
+        summary_data[[i]]$se^2
+    )
+    if (i == n_vars){
+        output[,n_vars] <- rbeta(
+            n_psa,
+            params.this$a,
+            params.this$b
+        )
+        
+    } else {
+        for (j in 1:n_psa){
+            continue <- F
+            while(continue==F){
+                val.this <- rbeta(1, 
+                                  params.this$a,
+                                  params.this$b
+                )
+                if (val.this >= output[j,i+1]){
+                    output[j, i] <- val.this
+                    continue <- T
+                }
+            }
+        }
+    }
+}
+```
+
+###Method 7: AIVM Covariance
+```{r, eval=FALSE}
+## Method 7 : AIVM Covariance
+if (n_vars!=2) stop("Only two parameters allowed with this method")
+
+output <- make_aivm_cov_2d(
+    mu_x=summary_data[[1]]$mu,
+    sd_x=summary_data[[1]]$se,
+    mu_y=summary_data[[2]]$mu,
+    sd_y=summary_data[[2]]$se,
+    colnames_=names(summary_data),
+    n_psa_=n_psa
+    )$aivm_samples
+
+```
+
+###Method 8: Lower bounded covariance fitting
+```{r, eval=FALSE}
+## Method 8 : Lower bounded covariance retrofitting
+if (n_vars!=2) stop("Only two parameters allowed with this method")
+
+output <- as.data.frame(
+    make_bcvr_2d(
+        mu_x=summary_data[[1]]$mu,
+        sd_x=summary_data[[1]]$se,
+        mu_y=summary_data[[2]]$mu,
+        sd_y=summary_data[[2]]$se,
+        n_psa_=n_psa,
+        upper=F,
+        colnames_=names(summary_data),
+        quietly=quietly
+    )$samples
+)
+```
+###Method 9: upper bounded covariance fitting
+```{r, eval=FALSE}
+## Method 9 : Upper Bounded covariance retrofitting
+if (n_vars!=2) stop("Only two parameters allowed with this method")
+
+output <- as.data.frame(   
+    make_bcvr_2d(
+        mu_x=summary_data[[1]]$mu,
+        sd_x=summary_data[[1]]$se,
+        mu_y=summary_data[[2]]$mu,
+        sd_y=summary_data[[2]]$se,
+        n_psa_=n_psa,
+        upper=T,
+        colnames_=names(summary_data),
+        quietly=quietly
+    )$samples
+)
+```        
+###Method 10: upwards difference method
+```{r, eval=FALSE}
+## Method 10: Beta distribution difference modelling : upwards
+# lowest value is reference
+params.this <- est_beta(
+    summary_data[[1]]$mu, 
+    summary_data[[1]]$se^2
+)
+
+draws_ref <- rbeta(
+    n_psa, 
+    params.this$a,
+    params.this$b
+    )
+output[,1] <- draws_ref
+
+for (i in 2:n_vars){
+    
+    dif_params.this <- get_dif_param(
+        summary_data[[i-1]]$mu, 
+        summary_data[[i-1]]$se,
+        
+        summary_data[[i]]$mu,
+        summary_data[[i]]$se
+        )
+    
+    deltas.this <- rbeta(
+        n_psa,
+        dif_params.this$a,
+        dif_params.this$b
+        )
+    
+    output[,i] <- output[,i-1] - deltas.this
+}
+```
+
+###Method 11: downwards difference method
+# Beta, downwards
+```{r, eval=FALSE}
+params.this <- est_beta(
+    summary_data[[n_vars]]$mu, 
+    summary_data[[n_vars]]$se^2
+)
+draws_ref <- rbeta(
+    n_psa, 
+    params.this$a,
+    params.this$b
+)
+output[,n_vars] <- draws_ref
+    
+for (i in n_vars:2){
+    
+    dif_params.this <- get_dif_param(
+        summary_data[[i-1]]$mu, 
+        summary_data[[i-1]]$se,
+        
+        summary_data[[i]]$mu,
+        summary_data[[i]]$se
+    )
+    
+    deltas.this <- rbeta(
+        n_psa,
+        dif_params.this$a,
+        dif_params.this$b
+    )
+
+    output[,i-1] <- output[,i] + deltas.this
+}
+```
