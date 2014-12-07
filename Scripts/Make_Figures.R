@@ -3,7 +3,7 @@
 # Toy example:
 tiff("figures/fig_01.tiff", 300,300) 
 toy_data <- data.frame(
-    bad=rnorm(10000, 0.20, 1.0),
+    bad=rnorm(10000, 0.05, 1.0),
     good=rnorm(10000, 0.6, 0.4)
     )
 
