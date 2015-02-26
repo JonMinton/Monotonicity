@@ -143,7 +143,6 @@ make_bcvr_2d <- function(
         
         if (!quietly){
             cat("upper bounded. Looking for values between ", lowerbound, " and ", upperbound, "\n")
-            browser()
         }
         
     } else {
@@ -152,7 +151,6 @@ make_bcvr_2d <- function(
         
         if (!quietly){
             cat("lower bounded. Looking for values between ", lowerbound, "and ", upperbound, "\n")
-            browser()
         }
     }
     
@@ -331,7 +329,7 @@ create_draws <- function(
     }
     
     if (method==5){
-        ## Method 5 : Upward Resampling
+        ## Method 5 : Upwards Resampling
         for (i in 1:n_vars){
             params.this <- est_beta(
                 summary_data[[i]]$mu, 
@@ -363,7 +361,7 @@ create_draws <- function(
     }
     
     if (method==6){
-        ## Method 6 : Upward Resampling
+        ## Method 6 : Downwards Resampling
         
         for (i in n_vars:1){
             params.this <- est_beta(
@@ -394,9 +392,31 @@ create_draws <- function(
             }
         }
     }
-    
-    
     if (method==7){
+        ## Method 7 : Resample, both ways
+        for (i in 1:(n_vars-1)){
+            params_first <- est_beta(
+                summary_data[[i]]$mu, 
+                summary_data[[i]]$se^2
+            )
+            
+            params_second <- est_beta(
+                summary_data[[i+1]]$mu,
+                summary_data[[i+1]]$se^2
+                )
+                                
+            for (j in 1:n_psa){
+                repeat {
+                    candidate_first <- rbeta(1, params_first$a, params_first$b)
+                    candidate_second <- rbeta(1, params_second$a, params_second$b)
+                    if (candidate_first >= candidate_second) {break}
+                }
+                output[j, i] <- candidate_first
+                output[j, i+1] <- candidate_second
+            }
+        }
+    }
+    if (method==8){
         ## Method 7 : AIVM Covariance
         if (n_vars!=2) stop("Only two parameters allowed with this method")
         
@@ -410,7 +430,7 @@ create_draws <- function(
             )$aivm_samples
     }
     
-    if (method==8){
+    if (method==9){
         ## Method 8 : Lower bounded covariance retrofitting
         
         if (n_vars!=2) stop("Only two parameters allowed with this method")
@@ -430,7 +450,7 @@ create_draws <- function(
                 
     }
     
-    if (method==9){
+    if (method==10){
         ## Method 9 : Upper Bounded covariance retrofitting
         if (n_vars!=2) stop("Only two parameters allowed with this method")
         
@@ -449,7 +469,7 @@ create_draws <- function(
         
     }
     
-    if (method==10){
+    if (method==11){
         ## Method 10: Beta distribution difference modelling : upwards
 
                 # lowest value is reference
@@ -486,7 +506,7 @@ create_draws <- function(
                 
             }
     
-    if (method == 11){
+    if (method == 12){
         # Beta, downwards
         params.this <- est_beta(
             summary_data[[n_vars]]$mu, 
@@ -531,7 +551,7 @@ make_block <- function(
     ipd=NULL,
     summary_data_=NULL,
     n_psa=1000,
-    methods_to_use=1:11,
+    methods_to_use=1:12,
     methods_labels=c(
         "Independent",
         "Quantile Matching",
@@ -539,6 +559,7 @@ make_block <- function(
         "Replication\n(Downwards)",
         "Resampling\n(Upwards)",
         "Resampling\n(Downwards)",
+        "Resampling\n(Both)",
         "Average Individual Variances",
         "Covariance Fitting\n(Lower Bounded)",
         "Covariance Fitting\n(Upper Bounded)",
