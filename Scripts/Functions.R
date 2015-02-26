@@ -1,30 +1,5 @@
 # Functions file
 
-summarise_ipd <- function(
-    data,
-    n_dp=3
-    ){
-    n_vars <- dim(data)[2]
-    n_obs <- dim(data)[1]
-    output <- vector("list", length=n_vars)
-    names(output) <- colnames(data)
-    
-    for (i in 1:n_vars){
-        mu.this <- round(mean(data[,i]), n_dp)
-        upper.this <- mean(data[,i]) + 1.96*sd(data[,i])/sqrt(n_obs)
-        se.this <- round(
-            (upper.this - mean(data[,i]))/1.96,
-            3)
-        
-        list.this <- list(
-            mu=mu.this,
-            se=se.this
-            )
-        output[[i]] <- list.this
-    }
-    return(output)    
-}
-
 bootstrap_means_ipd <- function(
     data,
     n_reps
@@ -89,7 +64,6 @@ make_aivm_cov_2d <- function(
         ),
         sd_x * sd_y)
     
-    if (THROW_FACTS) {sponge$aivm <<- aivm}
     
     sig <- matrix(
         data=c(
@@ -164,7 +138,6 @@ make_bcvr_2d <- function(
         
         cat("Upperbound already reached\n")
         search <- F # if the upper limit's already been reached, go no further
-        if (THROW_FACTS){sponge$upperbound_reached <<- T}
         
         testsig <- matrix(
             c(
@@ -215,21 +188,9 @@ make_bcvr_2d <- function(
             }
         }
     }
-    if (THROW_FACTS) { 
-        if (exists("sponge$cov_found")){
-            sponge$cov_found <<- c(sponge$cov_found, cov.this)
-        } else {
-            sponge$cov_found <<- cov.this
-        }
-    }
+
     cor.this <- cov.this / (sd_x * sd_y)
-    if (THROW_FACTS) {
-        if (exists("sponge$cor_found")){
-            sponge$cor_found <<- c(sponge$cor_found, cor.this)
-        } else {
-            sponge$cor_found <<- cor.this
-        }
-    }
+
     colnames(testsamples)=colnames_
     return(
         list(cov=cov.this, 
@@ -540,7 +501,7 @@ create_draws <- function(
     }
 
     ###
-    return(output)
+    return(data.frame(output))
 }
 
 
