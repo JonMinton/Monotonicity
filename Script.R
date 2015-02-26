@@ -1,16 +1,8 @@
 # New main script for Monotonicity analysis generation
-# 29/5/2014
-
-##### TO DO
-# 1) Look again at calculation of covariance approaches
-
+# 26/2/2015
 
 
 # Set up ------------------------------------------------------------------
-
-
-
-
 
 rm(list=ls())
 
@@ -68,11 +60,15 @@ fn <- function(x, n_dp=3){
     mu <- x %>%
         mean %>%
         round(n_dp)
+    
     n_obs <- length(x)
     upper_975 <- mean(x) + 1.96 * sd(x)/sqrt(n_obs)
+    
     se=((upper_975 - mean(x))/1.96) %>%
-        round(3)
+        round(n_dp)
+    
     out <- list(mu=mu, se=se)
+    
     return(out)
 }
 
@@ -87,10 +83,11 @@ out <- llply(
     1:12, 
     function(x) {create_draws(data_summaries, x, n_psa=N_PSA)}
     )
-out[[length(out)+1]] <-         data_2d  %>% 
-    bootstrap_means_ipd(n_reps=N_PSA)
-colnames(out[[length(out)]]) <- c("u1", "u2")
 
+out[[length(out)+1]] <- data_2d  %>% 
+    bootstrap_means_ipd(n_reps=N_PSA)
+
+colnames(out[[length(out)]]) <- c("u1", "u2")
 
 names(out) <-         c(
     "Independent",                  "Quantile Matching",    
@@ -100,7 +97,6 @@ names(out) <-         c(
     "Difference\n(Upwards)",      "Difference\n(Downwards)", "Bootstrapped"
 )
 
-
 draws_df <- ldply(out) %>% 
     rename(method=.id) %>%
     mutate(difference=u1-u2) %>%
@@ -108,6 +104,7 @@ draws_df <- ldply(out) %>%
         method!="Covariance Fitting\n(Lower Bounded)" &
         method!="Covariance Fitting\n(Upper Bounded)"       
         )
+
 
 draws_df$method <- factor(draws_df$method, 
                           levels=c("Bootstrapped", "Independent", "Resampling\n(Downwards)", 
@@ -148,7 +145,9 @@ fn <- function(x){
     values <- x$value
     boot_values <- draws_boot  %>% filter(variable==x$variable[1])  %>% .$value
 
-    boot_quantiles <- quantile(boot_values, seq(from=0.025, 0.975, 0.05))
+    boot_quantiles <- boot_values  %>% 
+        quantile(seq(from=0.025, 0.975, 0.05))
+    
     this_quantiles <- values %>%
         quantile(probs=seq(from=0.025, 0.975, 0.05))
         
@@ -156,29 +155,14 @@ fn <- function(x){
         .^2 %>%
         sum %>%
         .^0.5
+    
     return(data.frame(rms=out))
 }
 
 summaries_rms <- draws_nonboot  %>% 
-    do(fn(.))
-
-
-summaries_rms <- summaries_rms %>%
+    do(fn(.)) %>%
     spread(variable, rms)
 
-
-# #Compared with independent
-# summaries_relative_rms <- cbind(
-#     summaries_rms[,1],
-#     apply(summaries_rms[,-1], 2, function(x) x/x[1])
-#     ) 
-# 
-# summaries_relative_rms <- summaries_relative_rms %>%
-#     rowwise() %>%
-#     mutate(average=mean(c(u1, u2, difference))) %>%
-#     arrange(average)
-# 
-# 
 
 
 # Figures -----------------------------------------------------------------
@@ -236,7 +220,8 @@ tiff("figures/fig_03.tiff", 1100,1100)
 g <- draws_df %>% tbl_df %>%
     ggplot(aes(x=u1, y=u2)) +
     geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1) +
-    geom_point(alpha=0.1) + facet_wrap(~ method, nrow=3) +
+    geom_point(alpha=0.1) + 
+    facet_wrap(~ method, nrow=3) +
     coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7)) + 
     xlab("Higher parameter") + ylab("Lower parameter") + 
     theme(text=element_text(size=16))
@@ -251,7 +236,10 @@ g <- draws_df %>%
     ggplot(aes(x=u1)) + 
     geom_density(fill="grey") +
     facet_wrap("method", nrow=4) +
-    geom_density(aes(x=subset(draws_df, subset=method=="Bootstrapped")$u1), col="blue", width=1.1, lty="dashed") +
+    geom_density(
+        aes(x=subset(draws_df, subset=method=="Bootstrapped")$u1), 
+        col="blue", width=1.1, lty="dashed"
+    ) +
     xlab("Distribution of estimates for higher parameter")
 print(g)
 dev.off()
@@ -264,7 +252,10 @@ g <- draws_df %>%
     ggplot(aes(x=u2)) +
     geom_density(fill="grey") + 
     facet_wrap("method", nrow=4) + 
-    geom_density(aes(x=subset(draws_df, method=="Bootstrapped")$u2), col="blue", width=1.2, lty="dashed") + 
+    geom_density(
+        aes(x=subset(draws_df, method=="Bootstrapped")$u2), 
+        col="blue", width=1.1, lty="dashed"
+    ) + 
     xlab("Distribution of estimates for lower parameter")
 print(g)
 dev.off()
@@ -280,8 +271,7 @@ g <- draws_df %>%
     facet_wrap("method", nrow=4) +
     geom_density(
         aes(x=subset(draws_df, method=="Bootstrapped")$difference), 
-        col="blue", width=1.2, lty="dashed",
-        trim=T
+        col="blue", width=1.2, lty="dashed", trim=T
     ) + 
     xlab("Distribution of differences in paired estimates") + 
     coord_cartesian(ylim=c(0,100)) + 
@@ -297,8 +287,10 @@ tmp <- summaries_rms %>%
 # Want values reordered by mean rms error
 tmp <- summaries_rms %>%
     mutate(avg=(u1+u2+difference)/3)  %>% 
-    arrange(avg)  
+    arrange(avg)
+
 tmp$method <- factor(tmp$method, levels=tmp[order(tmp$avg), "method"])
+
 tmp <- tmp %>% 
     select(-avg)  %>% 
     gather(key=variable, value=value, -method) 
