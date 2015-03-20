@@ -309,3 +309,61 @@ print(g)
 dev.off()
 
 
+
+# KS tests ----------------------------------------------------------------
+
+
+# Suggestion from Kate: KS test of differences between each method and bootstrapped IPD method
+
+# example with one variable and method combination, then automating:
+
+u1_ind <- draws_long %>%
+    tbl_df %>%
+    filter(method=="Independent" & variable =="u1") %>%
+    .$value
+
+u1_boot <- draws_long %>%
+    tbl_df %>%
+    filter(method=="Bootstrapped" & variable =="u1") %>%
+    .$value
+
+dif_ind <- draws_long %>%
+    tbl_df %>%
+    filter(method=="Independent" & variable =="difference") %>%
+    .$value
+
+dif_boot <- draws_long %>%
+    tbl_df %>%
+    filter(method=="Bootstrapped" & variable =="difference") %>%
+    .$value
+
+
+out_u1 <- ks.test(u1_ind, u1_boot)
+out_dif <- ks.test(dif_ind, dif_boot)
+
+
+## Automating
+
+draws_boot <- draws_long %>%tbl_df %>%
+    filter(method=="Bootstrapped")
+
+draws_nonboot <- draws_long %>%
+    tbl_df %>%
+    filter(method!="Bootstrapped") %>%
+    group_by(method, variable)
+
+
+fn <- function(x){    
+    values <- x$value
+    boot_values <- draws_boot  %>% filter(variable==x$variable[1])  %>% .$value
+    
+    tmp <- ks.test(values, boot_values)
+    
+    out <- data.frame(D=tmp$statistic, p_val=tmp$p.value)
+    return(out)
+}
+
+
+summaries_rms <- draws_nonboot  %>% 
+    do(fn(.)) %>%
+    spread(variable, rms)
