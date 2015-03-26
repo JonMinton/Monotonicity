@@ -173,7 +173,7 @@ summaries_rms <- draws_nonboot  %>%
     
 
 # Toy example:
-tiff("figures/fig_01.tiff", 300,300) 
+#tiff("figures/fig_01.tiff", 300,300) 
 toy_data <- data.frame(
     bad=rnorm(10000, 0.05, 1.0),
     good=rnorm(10000, 0.6, 0.4)
@@ -200,23 +200,24 @@ theme_myblank <- theme(axis.line=element_blank(),
 g2 <- g + theme_myblank
 
 print(g2)
-
-dev.off()
+ggsave("figures/fig_01.tiff", height=2, width=2, dpi=300)
+#dev.off()
 
 # The IPD itself
 
-tiff("figures/fig_02.tiff", 500, 500)
+#tiff("figures/fig_02.tiff", 500, 500)
 g <- ggplot(data=data_2d, aes(x=u1, y=u2)) +
     geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1) +
     geom_point() +
     xlab("Higher parameter") + ylab("Lower parameter") +
     coord_fixed(xlim=c(0,1), ylim=c(0,1))
 print(g)
-dev.off()
+ggsave("figures/fig_02.tiff", height=3.5, width=3.5, dpi=300)
+#dev.off()
 
 
 
-tiff("figures/fig_03.tiff", 1100,1100) 
+#tiff("figures/fig_03.tiff", 1100,1100) 
 
 g <- draws_df %>% tbl_df %>%
     ggplot(aes(x=u1, y=u2)) +
@@ -227,7 +228,9 @@ g <- draws_df %>% tbl_df %>%
     xlab("Higher parameter") + ylab("Lower parameter") + 
     theme(text=element_text(size=16))
 print(g)
-dev.off()
+
+ggsave("figures/fig_03.tiff", height=7, width=7, dpi=300)
+#dev.off()
 
 
 # tiff("figures/fig_04.tiff", 1200, 800)
@@ -264,7 +267,7 @@ dev.off()
 
 
 # difference
-tiff("figures/fig_04.tiff", 1200, 800)
+#tiff("figures/fig_04.tiff", 1200, 800)
 g <- draws_df %>%
     filter(method!="Bootstrapped") %>%
     ggplot(aes(x=difference)) +
@@ -278,7 +281,11 @@ g <- draws_df %>%
     coord_cartesian(ylim=c(0,100)) + 
     geom_vline(mapping=aes(x=0), colour="red")
 print(g)
-dev.off()
+ggsave("figures/fig_04.tiff", height=7, width=7, dpi=300)
+#dev.off()
+
+
+# additional (now unused) -------------------------------------------------
 
 
 
