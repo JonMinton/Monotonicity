@@ -102,14 +102,15 @@ draws_df <- ldply(out) %>%
     mutate(difference=u1-u2) %>%
     filter(
         method!="Covariance Fitting\n(Lower Bounded)" &
-        method!="Covariance Fitting\n(Upper Bounded)"       
+        method!="Covariance Fitting\n(Upper Bounded)" &
+        method!="AIVM"
         )
 
 
 draws_df$method <- factor(draws_df$method, 
                           levels=c("Bootstrapped", "Independent", "Resampling\n(Downwards)", 
                                    "Resampling\n(Upwards)", "Resampling\n(Both)", "Replication\n(Downwards)", 
-                                   "Replication\n(Upwards)", "Quantile Matching", "AIVM", 
+                                   "Replication\n(Upwards)", "Quantile Matching", 
                                    "Difference\n(Downwards)", "Difference\n(Upwards)")
                           )
 
@@ -153,7 +154,7 @@ fn <- function(x){
         
     out <- (boot_quantiles - this_quantiles)  %>% 
         .^2 %>%
-        sum %>%
+        mean %>%
         .^0.5
     
     return(data.frame(rms=out))
@@ -229,41 +230,41 @@ print(g)
 dev.off()
 
 
-tiff("figures/fig_04.tiff", 1200, 800)
-
-g <- draws_df %>%
-    filter(method!="Bootstrapped") %>%
-    ggplot(aes(x=u1)) + 
-    geom_density(fill="grey") +
-    facet_wrap("method", nrow=4) +
-    geom_density(
-        aes(x=subset(draws_df, subset=method=="Bootstrapped")$u1), 
-        col="blue", width=1.1, lty="dashed"
-    ) +
-    xlab("Distribution of estimates for higher parameter")
-print(g)
-dev.off()
-
-
-# u2 : worse health state
-tiff("figures/fig_05.tiff", 1200, 800)
-g <- draws_df %>%
-    filter(method!="Bootstrapped") %>%
-    ggplot(aes(x=u2)) +
-    geom_density(fill="grey") + 
-    facet_wrap("method", nrow=4) + 
-    geom_density(
-        aes(x=subset(draws_df, method=="Bootstrapped")$u2), 
-        col="blue", width=1.1, lty="dashed"
-    ) + 
-    xlab("Distribution of estimates for lower parameter")
-print(g)
-dev.off()
+# tiff("figures/fig_04.tiff", 1200, 800)
+# 
+# g <- draws_df %>%
+#     filter(method!="Bootstrapped") %>%
+#     ggplot(aes(x=u1)) + 
+#     geom_density(fill="grey") +
+#     facet_wrap("method", nrow=4) +
+#     geom_density(
+#         aes(x=subset(draws_df, subset=method=="Bootstrapped")$u1), 
+#         col="blue", width=1.1, lty="dashed"
+#     ) +
+#     xlab("Distribution of estimates for higher parameter")
+# print(g)
+# dev.off()
+# 
+# 
+# # u2 : worse health state
+# tiff("figures/fig_05.tiff", 1200, 800)
+# g <- draws_df %>%
+#     filter(method!="Bootstrapped") %>%
+#     ggplot(aes(x=u2)) +
+#     geom_density(fill="grey") + 
+#     facet_wrap("method", nrow=4) + 
+#     geom_density(
+#         aes(x=subset(draws_df, method=="Bootstrapped")$u2), 
+#         col="blue", width=1.1, lty="dashed"
+#     ) + 
+#     xlab("Distribution of estimates for lower parameter")
+# print(g)
+# dev.off()
 
 
 
 # difference
-tiff("figures/fig_06.tiff", 1200, 800)
+tiff("figures/fig_04.tiff", 1200, 800)
 g <- draws_df %>%
     filter(method!="Bootstrapped") %>%
     ggplot(aes(x=difference)) +
