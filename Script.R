@@ -8,23 +8,21 @@ rm(list=ls())
 
 # Load prerequisites
 
-source("scripts/LoadPackages.R")
+require(pacman)
 
-RequiredPackages(
-    c(
-        "MASS",
-        "xlsx",
-        "ggplot2",
-        "reshape",
-        "gdata",
-        "devtools",
-        "plyr",
-        "tables",
-        "tidyr",
-        "dplyr"
-        )
+pacman::p_load(
+    MASS,
+    xlsx,
+    plyr,
+    stringr, tidyr, dplyr,
+    reshape,
+    gdata,
+    devtools,
+    tables,
+    ggplot2,
+    cowplot
+    
     )
-
 
 source("scripts/functions.r")
 
@@ -37,7 +35,7 @@ N_PSA <- 10000
 
 
 
-data_2d <- data.frame(
+data_2d <- data_frame(
     u1=
         c(0.736, 0.698, 0.756, 0.638, 0.646,
           0.619, 0.800, 0.411, 0.664, 0.513,
@@ -79,13 +77,32 @@ data_summaries <- data_2d %>%
 # Analyses ----------------------------------------------------------------
 
 
-out <- llply(
+out <- lapply(
     1:12, 
     function(x) {create_draws(data_summaries, x, n_psa=N_PSA)}
     )
 
+#Bootstrap function 
+
+bootstrap_data <- function(x, n_rep = 1000){
+    k <- ncol(x)
+    N <- nrow(x)
+    
+    out_df <- matrix(NA, nrow = n_rep, ncol = k)
+    
+    for (i in seq_along(1:n_rep)){
+        rows_to_sample <- sample(seq_along(1:N), replace = T)
+        y <- x[rows_to_sample,]
+        out <- sapply(X = y, mean)
+        out_df[i,] <- out        
+    }
+
+    colnames(out_df) <- colnames(x)    
+    out_df %>% data.frame %>% tbl_df
+}
+
 out[[length(out)+1]] <- data_2d  %>% 
-    bootstrap_means_ipd(n_reps=N_PSA)
+    bootstrap_data(n_rep = N_PSA)
 
 colnames(out[[length(out)]]) <- c("u1", "u2")
 
@@ -97,8 +114,9 @@ names(out) <-         c(
     "Difference\n(Upwards)",      "Difference\n(Downwards)", "Bootstrapped"
 )
 
-draws_df <- ldply(out) %>% 
-    rename(method=.id) %>%
+
+draws_df <- ldply(out) %>% tbl_df %>% 
+    dplyr::rename(method = .id) %>%
     mutate(difference=u1-u2) %>%
     filter(
         method!="Covariance Fitting\n(Lower Bounded)" &
@@ -123,7 +141,7 @@ draws_long <- draws_df %>%
 
 summaries_mean_sd <- draws_df %>% 
     group_by(method) %>%
-    summarise(
+    dplyr::summarise(
         u1.mean=mean(u1),
         u1.sd=sd(u1),
         u2.mean=mean(u2),
@@ -134,12 +152,12 @@ summaries_mean_sd <- draws_df %>%
 
 # Quantiles 
 
-draws_boot <- draws_long %>%tbl_df %>%
-    filter(method=="Bootstrapped")
+draws_boot <- draws_long %>% tbl_df %>%
+    dplyr::filter(method=="Bootstrapped")
 
 draws_nonboot <- draws_long %>%
     tbl_df %>%
-    filter(method!="Bootstrapped") %>%
+    dplyr::filter(method!="Bootstrapped") %>%
     group_by(method, variable)
 
 fn <- function(x){    
@@ -161,6 +179,7 @@ fn <- function(x){
 }
 
 summaries_rms <- draws_nonboot  %>% 
+    group_by(method, variable)  %>% 
     do(fn(.)) %>%
     spread(variable, rms)
 
@@ -174,33 +193,33 @@ summaries_rms <- draws_nonboot  %>%
 
 # Toy example:
 #tiff("figures/fig_01.tiff", 300,300) 
-toy_data <- data.frame(
-    bad=rnorm(10000, 0.05, 1.0),
-    good=rnorm(10000, 0.6, 0.4)
-)
-
-g <- ggplot(toy_data) + 
-    geom_density(aes(x=bad), fill="red", alpha=0.6) + 
-    geom_density(aes(x=good), fill="blue", alpha=0.2)
-
-
-theme_myblank <- theme(axis.line=element_blank(),
-                       axis.text.x=element_blank(),
-                       axis.text.y=element_blank(),
-                       axis.ticks=element_blank(),
-                       axis.title.x=element_blank(),
-                       axis.title.y=element_blank(),
-                       legend.position="none",
-                       panel.background=element_blank(),
-                       panel.border=element_blank(),
-                       panel.grid.major=element_blank(),
-                       panel.grid.minor=element_blank(),
-                       plot.background=element_blank())
-
-g2 <- g + theme_myblank
-
-print(g2)
-ggsave("figures/fig_01.tiff", height=2, width=2, dpi=300)
+# toy_data <- data.frame(
+#     bad=rnorm(10000, 0.05, 1.0),
+#     good=rnorm(10000, 0.6, 0.4)
+# )
+# 
+# g <- ggplot(toy_data) + 
+#     geom_density(aes(x=bad), fill="red", alpha=0.6) + 
+#     geom_density(aes(x=good), fill="blue", alpha=0.2)
+# 
+# 
+# theme_myblank <- theme(axis.line=element_blank(),
+#                        axis.text.x=element_blank(),
+#                        axis.text.y=element_blank(),
+#                        axis.ticks=element_blank(),
+#                        axis.title.x=element_blank(),
+#                        axis.title.y=element_blank(),
+#                        legend.position="none",
+#                        panel.background=element_blank(),
+#                        panel.border=element_blank(),
+#                        panel.grid.major=element_blank(),
+#                        panel.grid.minor=element_blank(),
+#                        plot.background=element_blank())
+# 
+# g2 <- g + theme_myblank
+# 
+# print(g2)
+# ggsave("figures/fig_01.tiff", height=2, width=2, dpi=300)
 #dev.off()
 
 # The IPD itself
@@ -212,24 +231,24 @@ g <- ggplot(data=data_2d, aes(x=u1, y=u2)) +
     xlab("Higher parameter") + ylab("Lower parameter") +
     coord_fixed(xlim=c(0,1), ylim=c(0,1))
 print(g)
-ggsave("figures/fig_02.tiff", height=3.5, width=3.5, dpi=300)
+ggsave("figures/brief_report_fig_01.tiff", height=10, width=10, units = "cm", dpi=300)
 #dev.off()
 
 
 
 #tiff("figures/fig_03.tiff", 1100,1100) 
 
-g <- draws_df %>% tbl_df %>%
-    ggplot(aes(x=u1, y=u2)) +
-    geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1) +
-    geom_point(alpha=0.1) + 
-    facet_wrap(~ method, nrow=3) +
-    coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7)) + 
-    xlab("Higher parameter") + ylab("Lower parameter") + 
-    theme(text=element_text(size=16))
-print(g)
-
-ggsave("figures/fig_03.tiff", height=7, width=7, dpi=300)
+# g <- draws_df %>% tbl_df %>%
+#     ggplot(aes(x=u1, y=u2)) +
+#     geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1) +
+#     geom_point(alpha=0.1) + 
+#     facet_wrap(~ method, nrow=3) +
+#     coord_fixed(xlim=c(0.4, 0.7), ylim=c(0.4, 0.7)) + 
+#     xlab("Higher parameter") + ylab("Lower parameter") + 
+#     theme(text=element_text(size=16))
+# print(g)
+# 
+# ggsave("figures/fig_03.tiff", height=7, width=7, dpi=300)
 #dev.off()
 
 
@@ -268,20 +287,20 @@ ggsave("figures/fig_03.tiff", height=7, width=7, dpi=300)
 
 # difference
 #tiff("figures/fig_04.tiff", 1200, 800)
-g <- draws_df %>%
-    filter(method!="Bootstrapped") %>%
-    ggplot(aes(x=difference)) +
-    geom_density(fill="grey") +
-    facet_wrap("method", nrow=4) +
-    geom_density(
-        aes(x=subset(draws_df, method=="Bootstrapped")$difference), 
-        col="blue", width=1.2, lty="dashed", trim=T
-    ) + 
-    xlab("Distribution of differences in paired estimates") + 
-    coord_cartesian(ylim=c(0,100)) + 
-    geom_vline(mapping=aes(x=0), colour="red")
-print(g)
-ggsave("figures/fig_04.tiff", height=7, width=7, dpi=300)
+# g <- draws_df %>%
+#     filter(method!="Bootstrapped") %>%
+#     ggplot(aes(x=difference)) +
+#     geom_density(fill="grey") +
+#     facet_wrap("method", nrow=4) +
+#     geom_density(
+#         aes(x=subset(draws_df, method=="Bootstrapped")$difference), 
+#         col="blue", width=1.2, lty="dashed", trim=T
+#     ) + 
+#     xlab("Distribution of differences in paired estimates") + 
+#     coord_cartesian(ylim=c(0,100)) + 
+#     geom_vline(mapping=aes(x=0), colour="red")
+# print(g)
+# ggsave("figures/fig_04.tiff", height=7, width=7, dpi=300)
 #dev.off()
 
 
@@ -293,28 +312,35 @@ class(summaries_rms) <- "data.frame"
 tmp <- summaries_rms %>%
     gather(key=variable, value=value, -method)
 # Want values reordered by mean rms error
-tmp <- summaries_rms %>%
-    mutate(avg=(u1+u2+difference)/3)  %>% 
-    arrange(avg)
+# tmp <- summaries_rms %>%
+#     mutate(avg=(u1+u2+difference)/3)  %>% 
+#     arrange(avg)
+
+
+
+tmp %>% 
+#    gather(key=variable, value=value, -method) %>% 
+    filter(method %in% c("Independent", "Replication\n(Upwards)", "Resampling\n(Upwards)", "Quantile Matching", "Difference\n(Upwards)")) %>% 
+    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Parameter'; 'u2' = 'Lower Parameter'")) %>% 
+    mutate(method = str_replace(method, "\n\\(Upwards\\)", "")) %>% 
+    spread(variable, value) %>% 
+    mutate(avg = (`Difference` + `Higher Parameter` + `Lower Parameter`)/ 3) %>% 
+    arrange(avg) -> tmp
+
 
 tmp$method <- factor(tmp$method, levels=tmp[order(tmp$avg), "method"])
 
-tmp <- tmp %>% 
-    select(-avg)  %>% 
-    gather(key=variable, value=value, -method) 
-levels(tmp$variable) = c("Higher", "Lower", "Difference")
-
-tiff("figures/fig_07.tiff", 1200, 800)
- g <- tmp %>%
-    ggplot(aes(x=value, y=method)) + 
+tmp <- tmp %>% select(-avg) %>% 
+    gather(key = Variable, value = value, -method)
+tmp %>%
+    ggplot(aes(x=value, y=method, group = Variable, shape = Variable)) + 
     geom_segment(aes(x=0, xend=value, y=method, yend=method), linetype="dashed") +
     geom_point(size=3) +     
-    facet_wrap ( ~ variable) +
-    labs (x="Root mean squared error", y="Method") 
-print(g)
+#    facet_wrap ( ~ variable) +
+    labs (x="Root mean squared error", y="Method") +
+    theme(panel.grid.major = element_line(colour = "grey", size = 0.5))
 
-
-dev.off()
+ggsave("figures/brief_report_fig_02.tiff", height = 15, width = 20, units = "cm", dpi = 300)
 
 
 
