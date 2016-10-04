@@ -307,6 +307,33 @@ ggsave("figures/brief_report_fig_01.tiff", height=10, width=10, units = "cm", dp
 # additional (now unused) -------------------------------------------------
 
 
+# Fig 2 should have three parts
+# fig 2a : scatterplot 
+# fig 2b : density plot - done
+# fig 2c : RMS difference
+
+draws_df  %>% 
+    filter(method %in% c("Bootstrapped", "Independent", "Difference\n(Upwards)"))  %>%
+    mutate(method = str_replace_all(method, "Difference\n\\(Upwards\\)", "Difference")) %>% 
+    ggplot(., aes(x = u2, y = u1)) + 
+    facet_wrap(~method) + 
+    geom_point(shape = ".") + 
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
+    labs(x = "Estimate of lower parameter", y = "Estimate of higher parameter") + 
+    lims(x = c(0.40, 0.80), y= c(0.40, 0.80)) -> fig2a
+
+
+draws_df  %>% 
+    filter(method %in% c("Bootstrapped", "Independent", "Difference\n(Upwards)"))  %>%
+    mutate(method = str_replace_all(method, "Difference\n\\(Upwards\\)", "Difference")) %>% 
+    ggplot(., aes(x = difference)) + 
+    facet_wrap(~method) + 
+    geom_density() + 
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+    labs(x = "Paired difference between higher and lower values", y = "Density of estimated values") -> fig2b
+
+
+
 
 class(summaries_rms) <- "data.frame"
 tmp <- summaries_rms %>%
@@ -317,10 +344,10 @@ tmp <- summaries_rms %>%
 #     arrange(avg)
 
 
-
+# Fig 2 in main MS. Independent vs DM
 tmp %>% 
 #    gather(key=variable, value=value, -method) %>% 
-    filter(method %in% c("Independent", "Replication\n(Upwards)", "Resampling\n(Upwards)", "Quantile Matching", "Difference\n(Upwards)")) %>% 
+    filter(method %in% c("Independent", "Difference\n(Upwards)")) %>% 
     mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Parameter'; 'u2' = 'Lower Parameter'")) %>% 
     mutate(method = str_replace(method, "\n\\(Upwards\\)", "")) %>% 
     spread(variable, value) %>% 
@@ -338,11 +365,44 @@ tmp %>%
     geom_point(size=3) +     
 #    facet_wrap ( ~ variable) +
     labs (x="Root mean squared error", y="Method") +
+    theme(
+        panel.grid.major = element_line(colour = "grey", size = 0.5),
+        legend.position = c(0.80, 0.15)
+    ) -> fig2c
+
+
+plot_grid(fig2a, fig2b, fig2c, labels =c("A", "B", "C"))
+
+ggsave("figures/brief_report_fig_02.tiff", height = 20, width = 25, units = "cm", dpi = 300)
+
+ggsave("figures/brief_report_fig_02.png", height = 20, width = 25, units = "cm", dpi = 300)
+
+
+
+
+tmp %>% 
+    #    gather(key=variable, value=value, -method) %>% 
+    filter(method %in% c("Independent", "Replication\n(Upwards)", "Resampling\n(Upwards)", "Quantile Matching", "Difference\n(Upwards)")) %>% 
+    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Parameter'; 'u2' = 'Lower Parameter'")) %>% 
+    mutate(method = str_replace(method, "\n\\(Upwards\\)", "")) %>% 
+    spread(variable, value) %>% 
+    mutate(avg = (`Difference` + `Higher Parameter` + `Lower Parameter`)/ 3) %>% 
+    arrange(avg) -> tmp
+
+
+tmp$method <- factor(tmp$method, levels=tmp[order(tmp$avg), "method"])
+
+tmp <- tmp %>% select(-avg) %>% 
+    gather(key = Variable, value = value, -method)
+tmp %>%
+    ggplot(aes(x=value, y=method, group = Variable, shape = Variable)) + 
+    geom_segment(aes(x=0, xend=value, y=method, yend=method), linetype="dashed") +
+    geom_point(size=3) +     
+    #    facet_wrap ( ~ variable) +
+    labs (x="Root mean squared error", y="Method") +
     theme(panel.grid.major = element_line(colour = "grey", size = 0.5))
 
 ggsave("figures/brief_report_fig_02.tiff", height = 15, width = 20, units = "cm", dpi = 300)
-
-
 
 # KS tests ----------------------------------------------------------------
 
