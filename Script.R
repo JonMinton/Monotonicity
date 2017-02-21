@@ -225,13 +225,13 @@ summaries_rms <- draws_nonboot  %>%
 # The IPD itself
 
 #tiff("figures/fig_02.tiff", 500, 500)
-g <- ggplot(data=data_2d, aes(x=u1, y=u2)) +
+fig1a <- ggplot(data=data_2d, aes(x=u2, y=u1)) +
     geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1) +
     geom_point() +
-    xlab("Higher parameter") + ylab("Lower parameter") +
+    xlab("Lower parameter") + ylab("Higher parameter") +
     coord_fixed(xlim=c(0,1), ylim=c(0,1))
-print(g)
-ggsave("figures/brief_report_fig_01.tiff", height=10, width=10, units = "cm", dpi=300)
+# print(g)
+# ggsave("figures/brief_report_fig_01.tiff", height=10, width=10, units = "cm", dpi=300)
 #dev.off()
 
 
@@ -320,7 +320,7 @@ draws_df  %>%
     geom_point(shape = ".") + 
     geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
     labs(x = "Estimate of lower parameter", y = "Estimate of higher parameter") + 
-    lims(x = c(0.40, 0.80), y= c(0.40, 0.80)) -> fig2a
+    lims(x = c(0.40, 0.80), y= c(0.40, 0.80)) -> fig1b
 
 
 draws_df  %>% 
@@ -330,7 +330,7 @@ draws_df  %>%
     facet_wrap(~method) + 
     geom_density() + 
     geom_vline(xintercept = 0, linetype = "dashed") + 
-    labs(x = "Paired difference between higher and lower values", y = "Density of estimated values") -> fig2b
+    labs(x = "Paired difference between higher and lower values", y = "Density of estimated values") -> fig1c
 
 
 
@@ -368,14 +368,14 @@ tmp %>%
     theme(
         panel.grid.major = element_line(colour = "grey", size = 0.5),
         legend.position = c(0.80, 0.15)
-    ) -> fig2c
+    ) -> fig1d
 
 
-plot_grid(fig2a, fig2b, fig2c, labels =c("A", "B", "C"))
+plot_grid(fig1a, fig1b, fig1c, fig1d, labels =c("A", "B", "C", "D"))
 
-ggsave("figures/brief_report_fig_02.tiff", height = 20, width = 25, units = "cm", dpi = 300)
+ggsave("figures/brief_report_fig_02.tiff", height = 25, width = 25, units = "cm", dpi = 300)
 
-ggsave("figures/brief_report_fig_02.png", height = 20, width = 25, units = "cm", dpi = 300)
+ggsave("figures/brief_report_fig_02.png", height = 25, width = 25, units = "cm", dpi = 300)
 
 
 
