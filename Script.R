@@ -36,21 +36,22 @@ N_PSA <- 10000
 
 
 data_2d <- data_frame(
+
     u1=
-        c(0.736, 0.698, 0.756, 0.638, 0.646,
-          0.619, 0.800, 0.411, 0.664, 0.513,
-          0.594, 0.371, 0.608, 0.528, 0.823,
-          0.682, 0.462, 0.576, 0.572, 0.607,
-          0.542, 0.625, 0.694, 0.512, 0.591,
-          0.559, 0.588, 0.766, 0.551, 0.256
-        ),
-    u2=
         c(0.700, 0.625, 0.719, 0.594, 0.565,
           0.565, 0.779, 0.363, 0.540, 0.500,
           0.532, 0.300, 0.572, 0.420, 0.810,
           0.650, 0.457, 0.517, 0.495, 0.561,
           0.481, 0.610, 0.603, 0.463, 0.551,
           0.450, 0.550, 0.647, 0.491, 0.150
+        ),
+    u2=
+        c(0.736, 0.698, 0.756, 0.638, 0.646,
+          0.619, 0.800, 0.411, 0.664, 0.513,
+          0.594, 0.371, 0.608, 0.528, 0.823,
+          0.682, 0.462, 0.576, 0.572, 0.607,
+          0.542, 0.625, 0.694, 0.512, 0.591,
+          0.559, 0.588, 0.766, 0.551, 0.256
         )
 )
 
@@ -78,7 +79,7 @@ data_summaries <- data_2d %>%
 
 
 out <- lapply(
-    1:12, 
+    c(1, 13:14), 
     function(x) {create_draws(data_summaries, x, n_psa=N_PSA)}
     )
 
@@ -106,30 +107,24 @@ out[[length(out)+1]] <- data_2d  %>%
 
 colnames(out[[length(out)]]) <- c("u1", "u2")
 
+names(out[[2]]) <- c("u1", "u2")
+names(out[[3]]) <- c("u1", "u2")
+
 names(out) <-         c(
-    "Independent",                  "Quantile Matching",    
-    "Replication\n(Upwards)",     "Replication\n(Downwards)",       "Resampling\n(Upwards)",
-    "Resampling\n(Downwards)",        "Resampling\n(Both)",           "AIVM",    
-    "Covariance Fitting\n(Lower Bounded)",  "Covariance Fitting\n(Upper Bounded)",    
-    "Difference\n(Upwards)",      "Difference\n(Downwards)", "Bootstrapped"
+    "Independent",
+    "Zero_one_bounded", "Zero_plus_bounded", "Bootstrapped"
 )
 
 
 draws_df <- ldply(out) %>% tbl_df %>% 
     dplyr::rename(method = .id) %>%
-    mutate(difference=u1-u2) %>%
-    filter(
-        method!="Covariance Fitting\n(Lower Bounded)" &
-        method!="Covariance Fitting\n(Upper Bounded)" &
-        method!="AIVM"
-        )
+    mutate(difference=u1-u2) 
 
 
 draws_df$method <- factor(draws_df$method, 
-                          levels=c("Bootstrapped", "Independent", "Resampling\n(Downwards)", 
-                                   "Resampling\n(Upwards)", "Resampling\n(Both)", "Replication\n(Downwards)", 
-                                   "Replication\n(Upwards)", "Quantile Matching", 
-                                   "Difference\n(Downwards)", "Difference\n(Upwards)")
+                          levels=c("Independent", "Bootstrapped", 
+                                   "Zero_one_bounded", "Zero_plus_bounded"
+                                   )
                           )
 
 draws_long <- draws_df %>%
@@ -313,8 +308,8 @@ fig1a <- ggplot(data=data_2d, aes(x=u2, y=u1)) +
 # fig 2c : RMS difference
 
 draws_df  %>% 
-    filter(method %in% c("Bootstrapped", "Independent", "Difference\n(Upwards)"))  %>%
-    mutate(method = str_replace_all(method, "Difference\n\\(Upwards\\)", "Difference")) %>% 
+    filter(method %in% c("Bootstrapped", "Independent", "Zero_one_bounded"))  %>%
+    mutate(method = str_replace_all(method, "Zero_one_bounded", "[0,1] Bounded")) %>% 
     ggplot(., aes(x = u2, y = u1)) + 
     facet_wrap(~method) + 
     geom_point(shape = ".") + 
@@ -324,8 +319,8 @@ draws_df  %>%
 
 
 draws_df  %>% 
-    filter(method %in% c("Bootstrapped", "Independent", "Difference\n(Upwards)"))  %>%
-    mutate(method = str_replace_all(method, "Difference\n\\(Upwards\\)", "Difference")) %>% 
+    filter(method %in% c("Bootstrapped", "Independent", "Zero_one_bounded"))  %>%
+    mutate(method = str_replace_all(method, "Zero_one_bounded", "[0,1] Bounded")) %>% 
     ggplot(., aes(x = difference)) + 
     facet_wrap(~method) + 
     geom_density() + 
@@ -347,11 +342,11 @@ tmp <- summaries_rms %>%
 # Fig 2 in main MS. Independent vs DM
 tmp %>% 
 #    gather(key=variable, value=value, -method) %>% 
-    filter(method %in% c("Independent", "Difference\n(Upwards)")) %>% 
-    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Parameter'; 'u2' = 'Lower Parameter'")) %>% 
+    filter(method %in% c("Independent", "Zero_one_bounded")) %>% 
+    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Param'; 'u2' = 'Lower Param'")) %>% 
     mutate(method = str_replace(method, "\n\\(Upwards\\)", "")) %>% 
     spread(variable, value) %>% 
-    mutate(avg = (`Difference` + `Higher Parameter` + `Lower Parameter`)/ 3) %>% 
+    mutate(avg = (`Difference` + `Higher Param` + `Lower Param`)/ 3) %>% 
     arrange(avg) -> tmp
 
 

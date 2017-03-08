@@ -1,3 +1,122 @@
+
+zero_one_bounded <- function(
+    X_mu, X_var,
+    Y_mu, Y_var,
+    n_sims = 100000,
+    verbose = F
+){
+    a.Y <- ((1 - Y_mu)* Y_mu / Y_var - 1) * Y_mu
+    b.Y <- a.Y * (1 - Y_mu) / Y_mu
+    y <- rbeta(n_sims, a.Y, b.Y)
+    n.y <- log( y / (1-y) )
+    
+    if (verbose){
+        cat("y has mean of ", mean(n.y), " and var of ", var(n.y), "\n")
+    }
+    
+    a.X <- ((1 - X_mu) * X_mu / X_var - 1) * X_mu
+    b.X <- a.X * (1 - X_mu) / X_mu
+    
+    x <- rbeta(n_sims, a.X, b.X)
+    n.x <- log(x / (1-x) )
+    
+    if (verbose){
+        cat("x has mean of ", mean(n.x), " and var of ", var(n.x), "\n")
+    }
+    
+    mu.d <- mean(n.y)  - mean(n.x)
+    var.d <- abs(var(n.y) - var(n.x))
+    
+    if (verbose){
+        cat("The variance of y ", ifelse(var(n.y) > var(n.x), "is ", "is not"), 
+            "greater than the variance of x\n")
+        cat("The difference in means is ", mu.d, "\n")
+        cat("The absolute difference in variances is ", var.d, "\n")
+    }
+    
+    s <- mu.d^2 / var.d
+    r <- mu.d / var.d
+    
+    s.d <- rgamma(n_sims, s, r)   #sample d from a gamma 
+    s.nx <- rnorm(n_sims ,mean(n.x), sqrt(var(n.x)))   #sample logit transformed x from a normal
+    s.ny <- s.d + s.nx                                 #sample value of logit transformed y 
+    
+    s.y <- exp(s.ny) / (1+exp(s.ny))                  #back tranform to get y
+    s.x <- exp(s.nx) / (1+exp(s.nx))                  #back tranform to get x
+    
+    #check the mean and var and min and max of sampled x and y
+    
+    if (verbose){
+        cat("X:\t", mean(s.x), "\t var:\t", var(s.x), "\t(min:\t", min(s.x), "\tmax:\t", max(s.x), "\n")
+        cat("Y:\t", mean(s.y), "\t var:\t", var(s.y), "\t(min:\t", min(s.y), "\tmax:\t", max(s.y), "\n")
+        
+    }
+    out <- list(X = s.x, Y = s.y)
+    
+    return(out)
+}
+
+
+
+zero_plus_bounded <- function(
+    X_mu, X_var,
+    Y_mu, Y_var,
+    n_sims = 100000,
+    verbose = F
+){
+    
+    s.y <- Y_mu^2 / Y_var
+    r.y <- Y_mu / Y_var
+    y <- rgamma(n_sims, s.y, r.y)
+    n.y <- exp(y)
+    
+    if (verbose){
+        cat("y has mean of ", mean(n.y), " and var of ", var(n.y), "\n")
+    }
+    
+    s.x <- X_mu^2 / X_var
+    r.x <- X_mu / X_var
+    
+    x <- rgamma(n_sims,s.x,r.x) # sample y from a gamma
+    
+    n.x<-exp(x)       #exp transformation to get to real line (unbounded)
+    # mean(n.x);var(n.x)  #mean and var after exp transformation
+    if (verbose){
+        cat("x has mean of ", mean(n.x), " and var of ", var(n.x), "\n")
+    }
+    
+    
+    # 
+    #n.y=n.x+d since var(logit transormed y)>var(logist transformed x)
+    mu.d <- mean(n.y) - mean(n.x)
+    v.d <- abs(var(n.y) - var(n.x))
+    
+    s <- mu.d^2 / v.d
+    r <- mu.d   / v.d
+    
+    s.d <- rgamma(n_sims, s, r)  #sample d from a gamma 
+    s.nx <- rnorm(n_sims, mean(n.x), sqrt(var(n.x)) )  #sample exp transformed x from a normal
+    s.ny <- s.nx + s.d                                #sample value of exp transformed y 
+    
+    s.y <- log(s.ny)                  #back tranform to get y
+    s.x <- log(s.nx)                  #back tranform to get x
+    
+    
+    if (verbose){
+        cat("The variance of y ", ifelse(var(n.y) > var(n.x), "is ", "is not"), 
+            "greater than the variance of x\n")  
+        cat("X:\t", mean(s.x), "\t var:\t", var(s.x), "\t(min:\t", min(s.x), "\tmax:\t", max(s.x), "\n")
+        cat("Y:\t", mean(s.y), "\t var:\t", var(s.y), "\t(min:\t", min(s.y), "\tmax:\t", max(s.y), "\n")
+        
+    }
+    
+    
+    out <- list(X = s.x, Y = s.y)
+    return(out)
+}
+
+
+
 # Functions file
 
 bootstrap_means_ipd <- function(
@@ -499,7 +618,40 @@ create_draws <- function(
             output[,i-1] <- output[,i] + deltas.this
         }
     }
-
+    
+    if (method == 13){
+        # zero_one_bounded
+        
+        out <- zero_one_bounded(
+            X_mu = summary_data[[1]]$mu,
+            X_var = summary_data[[1]]$se^2,
+            Y_mu = summary_data[[2]]$mu,
+            Y_var = summary_data[[2]]$se^2,
+            
+            n_sims = n_psa
+        )
+        
+        output <- data.frame(
+            x = out$X, y = out$Y
+        )
+    }
+    if (method == 14){
+        # zero_plus_bounded
+        
+        out <- zero_plus_bounded(
+            X_mu = summary_data[[1]]$mu,
+            X_var = summary_data[[1]]$se^2,
+            Y_mu = summary_data[[2]]$mu,
+            Y_var = summary_data[[2]]$se^2,
+            
+            n_sims = n_psa
+        )
+        
+        output <- data.frame(
+            x = out$X, y = out$Y
+        )
+    }
+    
     ###
     return(data.frame(output))
 }
@@ -512,7 +664,7 @@ make_block <- function(
     ipd=NULL,
     summary_data_=NULL,
     n_psa=1000,
-    methods_to_use=1:12,
+    methods_to_use=1:14,
     methods_labels=c(
         "Independent",
         "Quantile Matching",
@@ -525,7 +677,9 @@ make_block <- function(
         "Covariance Fitting\n(Lower Bounded)",
         "Covariance Fitting\n(Upper Bounded)",
         "Difference\n(Upwards)", 
-        "Difference\n(Downwards)"
+        "Difference\n(Downwards)",
+        "Zero_one_bounded", 
+        "Zero_plus_bounded"
         ),
     quietly=F
     ){
