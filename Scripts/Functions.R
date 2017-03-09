@@ -38,8 +38,14 @@ zero_one_bounded <- function(
     r <- mu.d / var.d
     
     s.d <- rgamma(n_sims, s, r)   #sample d from a gamma 
-    s.nx <- rnorm(n_sims ,mean(n.x), sqrt(var(n.x)))   #sample logit transformed x from a normal
-    s.ny <- s.d + s.nx                                 #sample value of logit transformed y 
+    if(var(n.y)>var(n.x)){
+        s.nx <- rnorm(n_sims,mean(n.x), sqrt(var(n.x)))   #sample logit transformed x from a normal
+        s.ny <- s.d + s.nx   
+    }
+    if(var(n.y)<var(n.x)){
+        s.ny<-rnorm(n_sims,mean(n.y),sqrt(var(n.y)))   #sample logit transformed y from a normal
+        s.nx<-s.ny - s.d   
+    }
     
     s.y <- exp(s.ny) / (1+exp(s.ny))                  #back tranform to get y
     s.x <- exp(s.nx) / (1+exp(s.nx))                  #back tranform to get x
@@ -95,8 +101,18 @@ zero_plus_bounded <- function(
     r <- mu.d   / v.d
     
     s.d <- rgamma(n_sims, s, r)  #sample d from a gamma 
-    s.nx <- rnorm(n_sims, mean(n.x), sqrt(var(n.x)) )  #sample exp transformed x from a normal
-    s.ny <- s.nx + s.d                                #sample value of exp transformed y 
+
+    if(var(n.y)>var(n.x)){
+        s.nx <- rnorm(n_sims,mean(n.x), sqrt(var(n.x)))   #sample exp transformed x from a normal
+        s.ny <- s.d + s.nx   
+    }
+    
+    if(var(n.y)<var(n.x)){
+        
+        s.ny<-rnorm(n_sims,mean(n.y),sqrt(var(n.y)))   #sample exp transformed y from a normal
+        s.nx<-s.ny - s.d   
+        
+    }
     
     s.y <- log(s.ny)                  #back tranform to get y
     s.x <- log(s.nx)                  #back tranform to get x

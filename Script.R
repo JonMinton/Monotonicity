@@ -223,7 +223,7 @@ summaries_rms <- draws_nonboot  %>%
 fig1a <- ggplot(data=data_2d, aes(x=u2, y=u1)) +
     geom_abline(intercept=0, slope=1, colour="red", lty="dashed", size=1.1) +
     geom_point() +
-    xlab("Lower parameter") + ylab("Higher parameter") +
+    xlab("Higher parameter") + ylab("Lower parameter") +
     coord_fixed(xlim=c(0,1), ylim=c(0,1))
 # print(g)
 # ggsave("figures/brief_report_fig_01.tiff", height=10, width=10, units = "cm", dpi=300)
@@ -314,7 +314,7 @@ draws_df  %>%
     facet_wrap(~method) + 
     geom_point(shape = ".") + 
     geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
-    labs(x = "Estimate of lower parameter", y = "Estimate of higher parameter") + 
+    labs(x = "Estimate of higher parameter", y = "Estimate of lower parameter") + 
     lims(x = c(0.40, 0.80), y= c(0.40, 0.80)) -> fig1b
 
 
@@ -343,7 +343,8 @@ tmp <- summaries_rms %>%
 tmp %>% 
 #    gather(key=variable, value=value, -method) %>% 
     filter(method %in% c("Independent", "Zero_one_bounded")) %>% 
-    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Param'; 'u2' = 'Lower Param'")) %>% 
+    mutate(method = str_replace_all(method, "Zero_one_bounded", "[0,1] Bounded")) %>% 
+    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Lower Param'; 'u2' = 'Higher Param'")) %>% 
     mutate(method = str_replace(method, "\n\\(Upwards\\)", "")) %>% 
     spread(variable, value) %>% 
     mutate(avg = (`Difference` + `Higher Param` + `Lower Param`)/ 3) %>% 
@@ -378,7 +379,7 @@ ggsave("figures/brief_report_fig_02.png", height = 25, width = 25, units = "cm",
 tmp %>% 
     #    gather(key=variable, value=value, -method) %>% 
     filter(method %in% c("Independent", "Replication\n(Upwards)", "Resampling\n(Upwards)", "Quantile Matching", "Difference\n(Upwards)")) %>% 
-    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Higher Parameter'; 'u2' = 'Lower Parameter'")) %>% 
+    mutate(variable = car::recode(variable, "'difference' = 'Difference'; 'u1' = 'Lower Parameter'; 'u2' = 'Higher Parameter'")) %>% 
     mutate(method = str_replace(method, "\n\\(Upwards\\)", "")) %>% 
     spread(variable, value) %>% 
     mutate(avg = (`Difference` + `Higher Parameter` + `Lower Parameter`)/ 3) %>% 
