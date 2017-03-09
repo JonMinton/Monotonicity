@@ -338,7 +338,7 @@ make_bcvr_2d <- function(
 create_draws <- function(
     summary_data,
     method,
-    n_psa=1000,
+    n_psa=100000,
     seed=80,
     quietly=F
     ){
